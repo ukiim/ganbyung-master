@@ -10,6 +10,8 @@ import {
 } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { SiteFooter } from "@/components/SiteFooter";
+import { Reveal } from "@/components/Reveal";
+import { CountUp } from "@/components/CountUp";
 import {
   won,
   CAREGIVERS,
@@ -40,6 +42,12 @@ const SURFACES = [
     title: "관리자 콘솔",
     desc: "회원·간병인 검증, 매칭 현황, 정산·분쟁 관리, 운영 지표를 한눈에 모니터링.",
     href: "/admin",
+  },
+  {
+    icon: "building" as const,
+    title: "기술·사업수행",
+    desc: "시스템 아키텍처, 대외 연계, 데이터·보안 설계와 사업수행 체계를 한눈에 확인하세요.",
+    href: "/architecture",
   },
 ];
 
@@ -76,7 +84,7 @@ export default function Home() {
       <div className="relative overflow-hidden bg-background">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
+          className="animate-hero-shift pointer-events-none absolute inset-0"
           style={{
             background:
               "radial-gradient(60% 55% at 78% 18%, rgba(14,158,110,0.14), transparent 70%), radial-gradient(45% 45% at 12% 90%, rgba(242,120,75,0.08), transparent 70%)",
@@ -87,7 +95,7 @@ export default function Home() {
             {/* 좌 */}
             <div className="animate-fade-up">
               <Eyebrow>
-                <Icon name="sparkles" className="h-4 w-4" />
+                <Icon name="sparkles" className="animate-pulse-soft h-4 w-4" />
                 제니엘메디컬 간병인 중개 플랫폼
               </Eyebrow>
               <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
@@ -138,7 +146,10 @@ export default function Home() {
                 />
 
                 {/* ① 매칭된 간병인 카드 */}
-                <div className="absolute left-5 top-6 w-[78%] rounded-[var(--radius-md)] border border-border bg-card p-4 shadow-lg">
+                <div
+                  className="animate-fade-up absolute left-5 top-6 w-[78%] rounded-[var(--radius-md)] border border-border bg-card p-4 shadow-lg"
+                  style={{ animationDelay: "320ms" }}
+                >
                   <div className="flex items-center gap-3">
                     <span
                       className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-white"
@@ -185,7 +196,10 @@ export default function Home() {
                 </div>
 
                 {/* ② 카카오 알림톡 미니 말풍선 */}
-                <div className="absolute bottom-20 right-4 w-[72%] rounded-[var(--radius-md)] bg-card p-3 shadow-lg">
+                <div
+                  className="animate-fade-up absolute bottom-20 right-4 w-[72%] rounded-[var(--radius-md)] bg-card p-3 shadow-lg"
+                  style={{ animationDelay: "460ms" }}
+                >
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                     <span className="flex h-4 w-4 items-center justify-center rounded-[4px] bg-kakao text-kakao-foreground">
                       <Icon name="kakao" className="h-3 w-3" filled />
@@ -201,11 +215,14 @@ export default function Home() {
                 </div>
 
                 {/* ③ 통계 칩 */}
-                <div className="absolute bottom-6 left-5 inline-flex items-center gap-2 rounded-full bg-card px-3.5 py-2 shadow-lg">
+                <div
+                  className="animate-fade-up absolute bottom-6 left-5 inline-flex items-center gap-2 rounded-full bg-card px-3.5 py-2 shadow-lg"
+                  style={{ animationDelay: "600ms" }}
+                >
                   <Icon name="clock" className="h-4 w-4 text-primary" />
                   <span className="text-sm font-semibold text-foreground">
                     평균 매칭{" "}
-                    <span className="tnum text-primary">12분</span>
+                    <CountUp value="12분" className="text-primary" />
                   </span>
                 </div>
               </div>
@@ -217,54 +234,60 @@ export default function Home() {
       {/* 2) STATS */}
       <Section muted>
         <dl className="grid grid-cols-2 gap-8 text-center md:grid-cols-4">
-          {STATS.map((s) => (
-            <div key={s.label}>
-              <dd className="tnum text-3xl font-bold text-primary sm:text-4xl">
-                {s.value}
+          {STATS.map((s, i) => (
+            <Reveal key={s.label} delay={i * 70}>
+              <dd className="text-3xl font-bold text-primary sm:text-4xl">
+                <CountUp value={s.value} />
               </dd>
               <dt className="mt-2 font-semibold text-foreground">{s.label}</dt>
               <p className="mt-1 text-sm text-muted-foreground">{s.sub}</p>
-            </div>
+            </Reveal>
           ))}
         </dl>
       </Section>
 
       {/* 3) PAIN POINTS */}
       <Section id="problem">
-        <SectionHeading
-          eyebrow="왜 간병마스터인가"
-          title="간병, 이렇게 불편했습니다"
-          description="급할 때 일일이 전화하고, 누가 오는지도 모른 채 흥정하던 간병. 보호자도 간병인도 불안했습니다."
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="왜 간병마스터인가"
+            title="간병, 이렇게 불편했습니다"
+            description="급할 때 일일이 전화하고, 누가 오는지도 모른 채 흥정하던 간병. 보호자도 간병인도 불안했습니다."
+          />
+        </Reveal>
         <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {PAIN_POINTS.map((p) => (
-            <Card key={p.title} hover>
-              <div className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)] bg-accent/10">
-                <Icon name={p.icon} className="h-6 w-6 text-accent" />
-              </div>
-              <h3 className="mt-4 font-bold text-foreground">{p.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {p.desc}
-              </p>
-            </Card>
+          {PAIN_POINTS.map((p, i) => (
+            <Reveal key={p.title} delay={i * 70} className="h-full">
+              <Card hover className="h-full">
+                <div className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)] bg-accent/10">
+                  <Icon name={p.icon} className="h-6 w-6 text-accent" />
+                </div>
+                <h3 className="mt-4 font-bold text-foreground">{p.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {p.desc}
+                </p>
+              </Card>
+            </Reveal>
           ))}
         </div>
       </Section>
 
       {/* 4) SOLUTION */}
       <Section muted id="about">
-        <SectionHeading
-          eyebrow="간병마스터의 해법"
-          title="하나의 플랫폼, 세 개의 연결"
-          description="환자·보호자, 간병인, 운영자를 한 흐름으로 잇습니다. 모든 연결의 중심에 간병마스터가 있습니다."
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="간병마스터의 해법"
+            title="하나의 플랫폼, 네 개의 연결"
+            description="환자·보호자, 간병인, 운영자를 한 흐름으로 잇고, 기술·사업수행까지 한 화면에서 확인합니다. 모든 연결의 중심에 간병마스터가 있습니다."
+          />
+        </Reveal>
 
         {/* 다이어그램 */}
         <div className="mt-12">
-          <div className="mx-auto flex max-w-3xl flex-col items-center">
+          <Reveal className="mx-auto flex max-w-3xl flex-col items-center">
             {/* 중심 노드 */}
             <div className="flex flex-col items-center rounded-[var(--radius-lg)] bg-primary px-8 py-5 text-center text-primary-foreground shadow-md">
-              <Icon name="heartPulse" className="h-7 w-7" filled />
+              <Icon name="heartPulse" className="animate-pulse-soft h-7 w-7" filled />
               <span className="mt-1.5 text-lg font-bold">간병마스터 플랫폼</span>
               <span className="text-sm text-primary-foreground/80">
                 매칭 · 협의 · 계약 · 결제 · 정산
@@ -272,63 +295,74 @@ export default function Home() {
             </div>
             {/* 연결선 */}
             <div className="h-8 w-px bg-border" aria-hidden="true" />
-          </div>
+          </Reveal>
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {SURFACES.map((s) => (
-              <Card key={s.title} hover className="flex flex-col text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
-                  <Icon name={s.icon} className="h-7 w-7 text-primary" />
-                </div>
-                <h3 className="mt-4 text-lg font-bold text-foreground">
-                  {s.title}
-                </h3>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-                  {s.desc}
-                </p>
-                <div className="mt-4">
-                  <Button href={s.href} variant="ghost">
-                    체험하기
-                    <Icon name="arrowRight" className="h-4 w-4" />
-                  </Button>
-                </div>
-              </Card>
-            ))}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {SURFACES.map((s, i) => {
+              const isArch = s.href === "/architecture";
+              return (
+              <Reveal key={s.title} delay={i * 70} className="h-full">
+                <Card hover className="flex h-full flex-col text-center">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
+                    <Icon name={s.icon} className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="mt-4 text-lg font-bold text-foreground">
+                    {s.title}
+                  </h3>
+                  <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                    {s.desc}
+                  </p>
+                  <div className="mt-4">
+                    <Button href={s.href} variant="ghost">
+                      {isArch ? "기술·사업수행 보기" : "체험하기"}
+                      <Icon name="arrowRight" className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
+              </Reveal>
+              );
+            })}
           </div>
         </div>
       </Section>
 
       {/* 5) FEATURES */}
       <Section id="features">
-        <SectionHeading
-          eyebrow="핵심 기능"
-          title="신뢰를 만드는 핵심 기능"
-          description="검증된 매칭부터 투명한 협의, 전자계약, 안전결제까지 — 간병의 모든 단계를 책임집니다."
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="핵심 기능"
+            title="신뢰를 만드는 핵심 기능"
+            description="검증된 매칭부터 투명한 협의, 전자계약, 안전결제까지 — 간병의 모든 단계를 책임집니다."
+          />
+        </Reveal>
         <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <Card key={f.title} hover>
-              <div className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
-                <Icon name={f.icon} className="h-6 w-6 text-primary" filled={f.icon === "kakao"} />
-              </div>
-              <h3 className="mt-4 text-lg font-bold text-foreground">
-                {f.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {f.desc}
-              </p>
-            </Card>
+          {FEATURES.map((f, i) => (
+            <Reveal key={f.title} delay={i * 70} className="h-full">
+              <Card hover className="h-full">
+                <div className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
+                  <Icon name={f.icon} className="h-6 w-6 text-primary" filled={f.icon === "kakao"} />
+                </div>
+                <h3 className="mt-4 text-lg font-bold text-foreground">
+                  {f.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {f.desc}
+                </p>
+              </Card>
+            </Reveal>
           ))}
         </div>
       </Section>
 
       {/* 6) FLOW */}
       <Section muted id="flow">
-        <SectionHeading
-          eyebrow="매칭 프로세스"
-          title="신청부터 정산까지, 8단계"
-          description="복잡했던 간병 절차를 명확한 8단계로. 어느 단계에 있는지 항상 한눈에 확인할 수 있습니다."
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="매칭 프로세스"
+            title="신청부터 정산까지, 8단계"
+            description="복잡했던 간병 절차를 명확한 8단계로. 어느 단계에 있는지 항상 한눈에 확인할 수 있습니다."
+          />
+        </Reveal>
         <ol className="mt-12 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
           {FLOW_STEPS.map((step, i) => {
             // lg 4열 그리드에서 각 행의 마지막(4번째, 8번째)에는 연결선을 그리지 않음
@@ -342,7 +376,7 @@ export default function Home() {
                   className="absolute left-[calc(50%+1.75rem)] top-7 hidden h-px w-[calc(100%-3.5rem)] bg-border lg:block"
                 />
               )}
-              <div className="relative flex flex-col items-center text-center">
+              <Reveal delay={i * 70} className="relative flex flex-col items-center text-center">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
                   <Icon name={step.icon} className="h-6 w-6" />
                 </span>
@@ -353,7 +387,7 @@ export default function Home() {
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                   {step.desc}
                 </p>
-              </div>
+              </Reveal>
             </li>
             );
           })}
@@ -362,28 +396,32 @@ export default function Home() {
 
       {/* 7) INTERFACE */}
       <Section id="interface">
-        <SectionHeading
-          eyebrow="대외 연계"
-          title="검증된 대외 연계"
-          description="은행·카드·심평원·보험사·인증·메시징까지, 실제 운영에 필요한 외부 시스템과 안정적으로 연동합니다."
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="대외 연계"
+            title="검증된 대외 연계"
+            description="은행·카드·심평원·보험사·인증·메시징까지, 실제 운영에 필요한 외부 시스템과 안정적으로 연동합니다."
+          />
+        </Reveal>
         <div className="mt-12 grid grid-cols-2 gap-6 md:grid-cols-3">
-          {INTERFACES.map((it) => (
-            <Card key={it.title} hover className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
-                <Icon
-                  name={it.icon}
-                  className="h-6 w-6 text-primary"
-                  filled={it.icon === "kakao"}
-                />
-              </div>
-              <div className="min-w-0">
-                <h3 className="font-bold text-foreground">{it.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  {it.desc}
-                </p>
-              </div>
-            </Card>
+          {INTERFACES.map((it, i) => (
+            <Reveal key={it.title} delay={i * 70} className="h-full">
+              <Card hover className="flex h-full items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
+                  <Icon
+                    name={it.icon}
+                    className="h-6 w-6 text-primary"
+                    filled={it.icon === "kakao"}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-foreground">{it.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    {it.desc}
+                  </p>
+                </div>
+              </Card>
+            </Reveal>
           ))}
         </div>
       </Section>
@@ -468,6 +506,13 @@ export default function Home() {
                 데모 둘러보기
                 <Icon name="arrowRight" className="h-5 w-5" />
               </Button>
+              <Link
+                href="/architecture"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-primary-foreground/40 px-7 py-3 text-base font-semibold text-primary-foreground transition-all hover:bg-primary-foreground/10 active:scale-[0.98]"
+              >
+                기술·사업수행 보기
+                <Icon name="arrowUpRight" className="h-5 w-5" />
+              </Link>
               <Link
                 href="/admin"
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-primary-foreground/40 px-7 py-3 text-base font-semibold text-primary-foreground transition-all hover:bg-primary-foreground/10 active:scale-[0.98]"

@@ -8,6 +8,7 @@ const COLS = [
       { href: "/patient", label: "환자·보호자 앱" },
       { href: "/caregiver", label: "간병인 앱" },
       { href: "/admin", label: "관리자 콘솔" },
+      { href: "/architecture", label: "기술·사업수행" },
     ],
   },
   {

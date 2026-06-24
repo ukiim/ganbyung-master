@@ -33,11 +33,13 @@ function StatusBar({ dark = false }: { dark?: boolean }) {
 export function PhoneFrame({
   children,
   tabBar,
+  overlay,
   dark = false,
   className = "",
 }: {
   children: ReactNode;
   tabBar?: ReactNode;
+  overlay?: ReactNode;
   dark?: boolean;
   className?: string;
 }) {
@@ -62,6 +64,7 @@ export function PhoneFrame({
             {children}
           </div>
           {tabBar}
+          {overlay}
           {/* 홈 인디케이터 */}
           <div className="flex h-5 shrink-0 items-center justify-center bg-inherit">
             <div

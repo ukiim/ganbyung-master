@@ -8,7 +8,11 @@ import { PhoneFrame } from "@/components/PhoneFrame";
 import { AppTabBar, type AppTab } from "@/components/AppTabBar";
 import { KakaoChat, type ChatMessage } from "@/components/KakaoChat";
 import { SiteFooter } from "@/components/SiteFooter";
+import { useToast } from "@/components/Toast";
 import { CAREGIVERS, HOSPITALS, won, type Caregiver } from "@/lib/data";
+
+// 마이 메뉴 바텀시트 키
+type SheetKey = "history" | "settlement" | "docs" | "qna" | "faq" | null;
 
 type Screen =
   | "home"
@@ -137,6 +141,13 @@ export default function PatientAppPage() {
   );
   const [payMethod, setPayMethod] = useState<"bank" | "card">("bank");
   const [agreed, setAgreed] = useState(false);
+  const [hospitalQuery, setHospitalQuery] = useState("");
+  const [pending, setPending] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<SheetKey>(null);
+  const [openTerms, setOpenTerms] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [zoomed, setZoomed] = useState(false);
+  const { show, node } = useToast();
 
   const selected =
     CAREGIVERS.find((c) => c.id === selectedId) ?? CAREGIVERS[0];
@@ -162,6 +173,25 @@ export default function PatientAppPage() {
     else go(key as Screen);
   }
 
+  // 짧은 로딩(스피너+비활성) 후 동작 실행. id는 어떤 버튼이 로딩 중인지 식별.
+  function runAction(id: string, after: () => void) {
+    if (pending) return;
+    setPending(id);
+    setTimeout(() => {
+      setPending(null);
+      after();
+    }, 700);
+  }
+
+  // 병원 검색: 이름/진료과 대소문자 무시 필터
+  const filteredHospitals = HOSPITALS.filter((h) => {
+    const q = hospitalQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      h.name.toLowerCase().includes(q) || h.dept.toLowerCase().includes(q)
+    );
+  });
+
   // ── 화면별 렌더 ────────────────────────────────────────────────
 
   const matchingList = [...CAREGIVERS].sort((a, b) => {
@@ -180,13 +210,16 @@ export default function PatientAppPage() {
             <AppBar
               title="간병마스터"
               right={
-                <button
-                  type="button"
-                  aria-label="알림"
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-muted"
-                >
-                  <Icon name="bell" className="h-5 w-5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <ZoomToggle zoomed={zoomed} onToggle={() => setZoomed((v) => !v)} />
+                  <button
+                    type="button"
+                    aria-label="알림"
+                    className="flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-muted"
+                  >
+                    <Icon name="bell" className="h-5 w-5" />
+                  </button>
+                </div>
               }
             />
             <div className="space-y-4 px-4 pb-6 pt-3">
@@ -237,19 +270,20 @@ export default function PatientAppPage() {
               <div className="grid grid-cols-4 gap-2">
                 {(
                   [
-                    { icon: "hospital", label: "병원검색" },
-                    { icon: "fileText", label: "서류발급" },
-                    { icon: "list", label: "간병이력" },
-                    { icon: "message", label: "고객의소리" },
-                  ] as { icon: IconName; label: string }[]
+                    { icon: "hospital", label: "병원검색", onClick: () => go("apply") },
+                    { icon: "fileText", label: "서류발급", onClick: () => setSheet("docs") },
+                    { icon: "list", label: "간병이력", onClick: () => setSheet("history") },
+                    { icon: "message", label: "고객의소리", onClick: () => setSheet("qna") },
+                  ] as { icon: IconName; label: string; onClick: () => void }[]
                 ).map((m) => (
                   <button
                     key={m.label}
                     type="button"
+                    onClick={m.onClick}
                     className="flex min-h-11 flex-col items-center gap-1.5 rounded-[var(--radius-md)] bg-muted p-2.5 text-center transition-colors hover:bg-border/60"
                   >
                     <Icon name={m.icon} className="h-6 w-6 text-primary" />
-                    <span className="text-[11px] font-medium text-foreground">
+                    <span className="text-xs font-medium text-foreground">
                       {m.label}
                     </span>
                   </button>
@@ -297,48 +331,71 @@ export default function PatientAppPage() {
 
               {/* 병원 검색 */}
               <Field label="입원 병원">
-                <button
-                  type="button"
-                  onClick={() => setHospitalOpen((v) => !v)}
-                  className="flex min-h-12 w-full items-center justify-between rounded-[var(--radius-md)] border border-input bg-background px-3.5 text-left text-sm hover:bg-muted"
-                >
-                  <span
-                    className={
-                      hospital ? "font-medium text-foreground" : "text-muted-foreground"
-                    }
+                {hospital && !hospitalOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setHospitalOpen(true)}
+                    className="flex min-h-12 w-full items-center justify-between rounded-[var(--radius-md)] border border-input bg-background px-3.5 text-left text-sm hover:bg-muted"
                   >
-                    {hospital ?? "병원명을 검색하세요"}
-                  </span>
-                  <Icon name="search" className="h-5 w-5 text-muted-foreground" />
-                </button>
-                {hospitalOpen && (
-                  <ul className="mt-2 space-y-1.5">
-                    {HOSPITALS.map((h) => (
-                      <li key={h.name}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setHospital(h.name);
-                            setHospitalOpen(false);
-                          }}
-                          className="flex w-full items-start justify-between gap-2 rounded-[var(--radius-md)] border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
-                        >
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-foreground">
-                              {h.name}
-                            </span>
-                            <span className="block truncate text-xs text-muted-foreground">
-                              {h.dept} · {h.region}
-                            </span>
-                          </span>
-                          <Badge tone="primary" className="shrink-0">
-                            <Icon name="verified" className="h-3 w-3" filled />
-                            심평원 연계
-                          </Badge>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                    <span className="font-medium text-foreground">{hospital}</span>
+                    <span className="text-xs font-medium text-primary">변경</span>
+                  </button>
+                ) : (
+                  <>
+                    <div className="flex min-h-12 items-center gap-2 rounded-[var(--radius-md)] border border-input bg-background px-3.5 focus-within:border-primary">
+                      <Icon
+                        name="search"
+                        className="h-5 w-5 shrink-0 text-muted-foreground"
+                      />
+                      <input
+                        type="text"
+                        value={hospitalQuery}
+                        onChange={(e) => {
+                          setHospitalQuery(e.target.value);
+                          setHospitalOpen(true);
+                        }}
+                        onFocus={() => setHospitalOpen(true)}
+                        placeholder="병원명 또는 진료과로 검색"
+                        aria-label="입원 병원 검색"
+                        className="min-h-11 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+                      />
+                    </div>
+                    {hospitalOpen && (
+                      <ul className="mt-2 space-y-1.5">
+                        {filteredHospitals.length === 0 ? (
+                          <li className="rounded-[var(--radius-md)] border border-dashed border-border bg-muted/50 p-4 text-center text-sm text-muted-foreground">
+                            검색 결과가 없습니다. 병원명·진료과를 확인해 주세요.
+                          </li>
+                        ) : (
+                          filteredHospitals.map((h) => (
+                            <li key={h.name}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setHospital(h.name);
+                                  setHospitalOpen(false);
+                                }}
+                                className="flex w-full items-start justify-between gap-2 rounded-[var(--radius-md)] border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
+                              >
+                                <span className="min-w-0">
+                                  <span className="block truncate text-sm font-semibold text-foreground">
+                                    {h.name}
+                                  </span>
+                                  <span className="block truncate text-xs text-muted-foreground">
+                                    {h.dept} · {h.region}
+                                  </span>
+                                </span>
+                                <Badge tone="primary" className="shrink-0">
+                                  <Icon name="verified" className="h-3 w-3" filled />
+                                  심평원 연계
+                                </Badge>
+                              </button>
+                            </li>
+                          ))
+                        )}
+                      </ul>
+                    )}
+                  </>
                 )}
               </Field>
 
@@ -368,11 +425,25 @@ export default function PatientAppPage() {
             <BottomBar>
               <Button
                 size="lg"
-                className="w-full"
-                onClick={() => go("matching")}
+                className={`w-full ${pending === "find" ? "pointer-events-none opacity-70" : ""}`}
+                onClick={() =>
+                  runAction("find", () => {
+                    go("matching");
+                    show("조건에 맞는 간병인을 찾았어요", "userCheck");
+                  })
+                }
               >
-                간병인 찾기
-                <Icon name="arrowRight" className="h-5 w-5" />
+                {pending === "find" ? (
+                  <>
+                    <Spinner />
+                    간병인 검색 중…
+                  </>
+                ) : (
+                  <>
+                    간병인 찾기
+                    <Icon name="arrowRight" className="h-5 w-5" />
+                  </>
+                )}
               </Button>
             </BottomBar>
           </div>
@@ -390,7 +461,7 @@ export default function PatientAppPage() {
                   key={f}
                   type="button"
                   onClick={() => setMatchFilter(f)}
-                  className={`min-h-9 rounded-full px-3.5 text-sm font-semibold transition-colors ${
+                  className={`min-h-11 rounded-full px-3.5 text-sm font-semibold transition-colors ${
                     matchFilter === f
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:bg-border/60"
@@ -435,7 +506,7 @@ export default function PatientAppPage() {
                       {cg.specialties.map((s) => (
                         <span
                           key={s}
-                          className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                          className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
                         >
                           {s}
                         </span>
@@ -445,7 +516,7 @@ export default function PatientAppPage() {
                     <div className="mt-2.5 flex items-center justify-between border-t border-border pt-2.5">
                       <div className="flex flex-col">
                         {cg.insured && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
                             <Icon name="shieldCheck" className="h-3.5 w-3.5" />
                             배상책임보험 가입
                           </span>
@@ -568,11 +639,25 @@ export default function PatientAppPage() {
             <BottomBar>
               <Button
                 size="lg"
-                className="w-full"
-                onClick={() => go("negotiate")}
+                className={`w-full ${pending === "negotiate" ? "pointer-events-none opacity-70" : ""}`}
+                onClick={() =>
+                  runAction("negotiate", () => {
+                    go("negotiate");
+                    show("카카오 알림톡으로 협의방이 열렸어요", "kakao", "kakao");
+                  })
+                }
               >
-                <Icon name="kakao" className="h-5 w-5" filled />이 간병인으로
-                간병비 협의
+                {pending === "negotiate" ? (
+                  <>
+                    <Spinner />
+                    협의방 여는 중…
+                  </>
+                ) : (
+                  <>
+                    <Icon name="kakao" className="h-5 w-5" filled />이 간병인으로
+                    간병비 협의
+                  </>
+                )}
               </Button>
             </BottomBar>
           </div>
@@ -684,20 +769,64 @@ export default function PatientAppPage() {
                   <Row k="중개수수료 (10%)" v={won(fee)} />
                 </DocSection>
 
-                <DocSection title="특약사항">
-                  <ul className="list-disc space-y-1 pl-4 text-[13px] leading-relaxed text-muted-foreground">
-                    <li>
-                      간병인은 신원검증 및 배상책임보험에 가입되어 있으며, 사고
-                      발생 시 보험으로 배상합니다.
-                    </li>
-                    <li>
-                      간병비는 안전결제로 예치되며, 간병 종료 후 자동 정산됩니다.
-                    </li>
-                    <li>
-                      간병 중단 시 일할 계산하여 잔여 간병비를 환급합니다.
-                    </li>
-                  </ul>
-                </DocSection>
+                <section className="mb-3.5">
+                  <button
+                    type="button"
+                    onClick={() => setOpenTerms((v) => !v)}
+                    aria-expanded={openTerms}
+                    className="flex min-h-11 w-full items-center justify-between text-left"
+                  >
+                    <span className="text-xs font-bold text-foreground">
+                      특약사항 {openTerms ? "접기" : "펼치기"}
+                    </span>
+                    <Icon
+                      name="chevronDown"
+                      className={`h-4 w-4 text-muted-foreground transition-transform ${
+                        openTerms ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  {openTerms && (
+                    <div className="mt-1.5 space-y-1.5 rounded-[var(--radius-sm)] bg-muted p-3">
+                      <ul className="list-disc space-y-1 pl-4 text-[13px] leading-relaxed text-muted-foreground">
+                        <li>
+                          간병인은 신원검증 및 배상책임보험에 가입되어 있으며, 사고
+                          발생 시 보험으로 배상합니다.
+                        </li>
+                        <li>
+                          간병비는 안전결제로 예치되며, 간병 종료 후 자동 정산됩니다.
+                        </li>
+                        <li>
+                          간병 중단 시 일할 계산하여 잔여 간병비를 환급합니다.
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+                </section>
+
+                {/* PDF 다운로드 */}
+                <button
+                  type="button"
+                  disabled={pending === "pdf"}
+                  onClick={() =>
+                    runAction("pdf", () =>
+                      show("계약서 PDF가 저장되었습니다", "download"),
+                    )
+                  }
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border border-border text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+                >
+                  {pending === "pdf" ? (
+                    <>
+                      <Spinner dark />
+                      PDF 생성 중…
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="download" className="h-4.5 w-4.5" />
+                      계약서 PDF 다운로드
+                    </>
+                  )}
+                </button>
               </article>
 
               {/* 동의 체크 */}
@@ -725,11 +854,30 @@ export default function PatientAppPage() {
             <BottomBar>
               <Button
                 size="lg"
-                className="w-full disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => agreed && go("payment")}
+                className={`w-full ${
+                  !agreed || pending === "sign"
+                    ? "pointer-events-none opacity-50"
+                    : ""
+                }`}
+                onClick={() =>
+                  agreed &&
+                  runAction("sign", () => {
+                    go("payment");
+                    show("전자서명이 완료되었습니다", "fileText");
+                  })
+                }
               >
-                <Icon name="lock" className="h-5 w-5" />
-                동의하고 결제
+                {pending === "sign" ? (
+                  <>
+                    <Spinner />
+                    전자서명 처리 중…
+                  </>
+                ) : (
+                  <>
+                    <Icon name="lock" className="h-5 w-5" />
+                    동의하고 결제
+                  </>
+                )}
               </Button>
               {!agreed && (
                 <p className="mt-2 text-center text-xs text-muted-foreground">
@@ -836,10 +984,22 @@ export default function PatientAppPage() {
             <BottomBar>
               <Button
                 size="lg"
-                className="w-full"
-                onClick={() => go("success")}
+                className={`w-full ${pending === "pay" ? "pointer-events-none opacity-70" : ""}`}
+                onClick={() =>
+                  runAction("pay", () => {
+                    go("success");
+                    show("결제가 완료되었습니다", "checkCircle");
+                  })
+                }
               >
-                {won(total + fee)} 결제하기
+                {pending === "pay" ? (
+                  <>
+                    <Spinner />
+                    결제 처리 중…
+                  </>
+                ) : (
+                  <>{won(total + fee)} 결제하기</>
+                )}
               </Button>
             </BottomBar>
           </div>
@@ -881,6 +1041,43 @@ export default function PatientAppPage() {
                   <Row k="간병 기간" v={`${CARE_PERIOD} (${CARE_DAYS}일)`} />
                   <Row k="결제금액" v={won(total + fee)} strong />
                 </div>
+              </div>
+
+              {/* 알림톡 발송 안내 */}
+              <div className="animate-fade-up mt-3 flex w-full items-start gap-2.5 rounded-[var(--radius-md)] bg-[#fee500]/25 p-3.5 text-left">
+                <Icon
+                  name="kakao"
+                  className="mt-0.5 h-5 w-5 shrink-0 text-foreground"
+                  filled
+                />
+                <p className="text-sm leading-relaxed text-foreground">
+                  <span className="font-bold">알림톡 발송 완료</span> · 보호자
+                  김보호 님과 {selected.name} 간병인에게 계약·일정 확인
+                  알림톡이 발송되었습니다.
+                </p>
+              </div>
+
+              {/* 다음 단계 안내 */}
+              <div className="animate-fade-up mt-3 w-full rounded-[var(--radius-md)] border border-border bg-card p-3.5 text-left">
+                <p className="text-xs font-bold text-foreground">다음 단계</p>
+                <ul className="mt-2 space-y-1.5 text-[13px] text-muted-foreground">
+                  <li className="flex gap-2">
+                    <Icon
+                      name="clipboard"
+                      className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                    />
+                    간병 시작일(6/25)부터 진행 상태와 매일 간병일지를 확인할 수
+                    있어요.
+                  </li>
+                  <li className="flex gap-2">
+                    <Icon
+                      name="coins"
+                      className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                    />
+                    간병 종료 다음 영업일에 예치금이 간병인에게 자동
+                    정산됩니다.
+                  </li>
+                </ul>
               </div>
             </div>
 
@@ -984,6 +1181,28 @@ export default function PatientAppPage() {
                       </li>
                     ))}
                   </ul>
+                  <button
+                    type="button"
+                    disabled={pending === "diary"}
+                    onClick={() =>
+                      runAction("diary", () =>
+                        show("간병일지를 확인했습니다", "checkCircle"),
+                      )
+                    }
+                    className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary/10 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:opacity-60"
+                  >
+                    {pending === "diary" ? (
+                      <>
+                        <Spinner />
+                        확인 처리 중…
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="checkCircle" className="h-4.5 w-4.5" />
+                        간병일지 확인 완료
+                      </>
+                    )}
+                  </button>
                 </div>
               </Field>
 
@@ -1029,12 +1248,45 @@ export default function PatientAppPage() {
                 </div>
               </div>
 
+              {/* 큰글씨 모드 토글 */}
+              <button
+                type="button"
+                onClick={() => setZoomed((v) => !v)}
+                aria-pressed={zoomed}
+                className="flex w-full items-center gap-3 rounded-[var(--radius-lg)] border border-border bg-card p-4 text-left"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <span className="text-base font-bold">가</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    큰글씨 모드
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    화면 글씨와 버튼을 크게 표시합니다
+                  </p>
+                </div>
+                <span
+                  className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                    zoomed ? "bg-primary" : "bg-border"
+                  }`}
+                  aria-hidden="true"
+                >
+                  <span
+                    className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                      zoomed ? "translate-x-5" : "translate-x-0.5"
+                    }`}
+                  />
+                </span>
+              </button>
+
               {/* 메뉴 */}
               <ul className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
                 {MY_MENU.map((m, i) => (
                   <li key={m.label}>
                     <button
                       type="button"
+                      onClick={() => m.sheet && setSheet(m.sheet)}
                       className={`flex min-h-13 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted ${
                         i > 0 ? "border-t border-border" : ""
                       }`}
@@ -1149,6 +1401,7 @@ export default function PatientAppPage() {
           {/* 폰 */}
           <div className="w-full max-w-[380px] justify-self-center">
             <PhoneFrame
+              overlay={node}
               tabBar={
                 <AppTabBar<TabKey>
                   tabs={TABS}
@@ -1157,7 +1410,25 @@ export default function PatientAppPage() {
                 />
               }
             >
-              {renderScreen()}
+              <div className={zoomed ? "app-zoomed" : undefined}>
+                <div key={screen} className="animate-screen-in">
+                  {renderScreen()}
+                </div>
+              </div>
+              {sheet && (
+                <BottomSheet
+                  sheet={sheet}
+                  onClose={() => setSheet(null)}
+                  openFaq={openFaq}
+                  setOpenFaq={setOpenFaq}
+                  onDocIssue={() =>
+                    runAction("doc-issue", () =>
+                      show("서류 발급이 완료되었습니다", "fileText"),
+                    )
+                  }
+                  pending={pending}
+                />
+              )}
             </PhoneFrame>
           </div>
         </div>
@@ -1169,6 +1440,272 @@ export default function PatientAppPage() {
 }
 
 // ── 보조 컴포넌트 / 데이터 ───────────────────────────────────────
+
+// 인라인 로딩 스피너 (버튼 내부용)
+function Spinner({ dark = false }: { dark?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={`h-5 w-5 animate-spin ${dark ? "text-foreground" : "text-current"}`}
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeOpacity="0.25"
+      />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+// 큰글씨 모드 토글 (앱바용)
+function ZoomToggle({
+  zoomed,
+  onToggle,
+}: {
+  zoomed: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={zoomed}
+      aria-label={zoomed ? "큰글씨 모드 끄기" : "큰글씨 모드 켜기"}
+      className={`flex min-h-11 items-center gap-1 rounded-full px-2.5 text-sm font-bold transition-colors ${
+        zoomed
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted text-muted-foreground hover:bg-border/60"
+      }`}
+    >
+      <span className="text-xs">가</span>
+      <span className="text-base">가</span>
+    </button>
+  );
+}
+
+// 마이/홈 메뉴용 슬라이드업 바텀시트 (실제 내용 패널)
+function BottomSheet({
+  sheet,
+  onClose,
+  openFaq,
+  setOpenFaq,
+  onDocIssue,
+  pending,
+}: {
+  sheet: Exclude<SheetKey, null>;
+  onClose: () => void;
+  openFaq: number | null;
+  setOpenFaq: (v: number | null) => void;
+  onDocIssue: () => void;
+  pending: string | null;
+}) {
+  const titles: Record<Exclude<SheetKey, null>, string> = {
+    history: "간병 이력",
+    settlement: "정산·환급 내역",
+    docs: "서류 발급",
+    qna: "1:1 문의 (Q&A)",
+    faq: "자주 묻는 질문",
+  };
+
+  return (
+    <div className="absolute inset-0 z-40 flex flex-col justify-end">
+      {/* 딤 */}
+      <button
+        type="button"
+        aria-label="닫기"
+        onClick={onClose}
+        className="absolute inset-0 bg-foreground/40"
+      />
+      {/* 시트 */}
+      <div className="animate-fade-up relative max-h-[80%] overflow-y-auto rounded-t-[var(--radius-lg)] bg-background pb-4 shadow-2xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+          <h3 className="text-base font-bold text-foreground">
+            {titles[sheet]}
+          </h3>
+          <button
+            type="button"
+            aria-label="닫기"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+          >
+            <Icon name="x" className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="px-4 pt-3">
+          {sheet === "history" && (
+            <ul className="space-y-2.5">
+              {HISTORY.map((h) => (
+                <li
+                  key={h.date}
+                  className="rounded-[var(--radius-md)] border border-border bg-card p-3.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-foreground">
+                      {h.caregiver} 간병인
+                    </span>
+                    <Badge tone={h.status === "완료" ? "muted" : "primary"}>
+                      {h.status}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {h.patient} · {h.period}
+                  </p>
+                  <p className="tnum mt-1 text-sm font-semibold text-foreground">
+                    {h.amount}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {sheet === "settlement" && (
+            <ul className="space-y-2.5">
+              {SETTLEMENTS.map((s) => (
+                <li
+                  key={s.date}
+                  className="flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-card p-3.5"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">
+                      {s.label}
+                    </p>
+                    <p className="tnum text-xs text-muted-foreground">
+                      {s.date}
+                    </p>
+                  </div>
+                  <span
+                    className={`tnum text-sm font-bold ${
+                      s.kind === "환급" ? "text-primary" : "text-foreground"
+                    }`}
+                  >
+                    {s.kind === "환급" ? "+" : "-"}
+                    {s.amount}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {sheet === "docs" && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                필요한 서류를 선택해 발급받으세요. 발급 즉시 PDF로
+                저장됩니다.
+              </p>
+              <ul className="space-y-2">
+                {DOCS.map((d) => (
+                  <li
+                    key={d}
+                    className="flex items-center justify-between gap-2 rounded-[var(--radius-md)] border border-border bg-card p-3"
+                  >
+                    <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <Icon
+                        name="fileText"
+                        className="h-4.5 w-4.5 text-primary"
+                      />
+                      {d}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={pending === "doc-issue"}
+                      onClick={onDocIssue}
+                      className="flex min-h-11 items-center gap-1.5 rounded-[var(--radius-md)] bg-primary/10 px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:opacity-60"
+                    >
+                      {pending === "doc-issue" ? (
+                        <Spinner />
+                      ) : (
+                        <Icon name="download" className="h-4 w-4" />
+                      )}
+                      발급
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {sheet === "qna" && (
+            <div className="space-y-3">
+              <div className="rounded-[var(--radius-md)] bg-muted p-3.5">
+                <p className="text-sm font-semibold text-foreground">
+                  무엇을 도와드릴까요?
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  평일 09:00~18:00 · 평균 응답 10분 이내
+                </p>
+              </div>
+              <ul className="space-y-2.5">
+                {QNA.map((q) => (
+                  <li
+                    key={q.q}
+                    className="rounded-[var(--radius-md)] border border-border bg-card p-3.5"
+                  >
+                    <p className="text-sm font-semibold text-foreground">
+                      Q. {q.q}
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                      A. {q.a}
+                    </p>
+                    <p className="tnum mt-1.5 text-xs text-primary">
+                      답변 완료 · {q.date}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {sheet === "faq" && (
+            <ul className="space-y-2">
+              {FAQ.map((f, i) => {
+                const open = openFaq === i;
+                return (
+                  <li
+                    key={f.q}
+                    className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-card"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(open ? null : i)}
+                      aria-expanded={open}
+                      className="flex min-h-13 w-full items-center justify-between gap-2 px-3.5 py-3 text-left"
+                    >
+                      <span className="text-sm font-semibold text-foreground">
+                        {f.q}
+                      </span>
+                      <Icon
+                        name="chevronDown"
+                        className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                          open ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    {open && (
+                      <p className="border-t border-border px-3.5 py-3 text-sm leading-relaxed text-muted-foreground">
+                        {f.a}
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -1303,6 +1840,11 @@ const REVIEWS: { author: string; rating: number; text: string }[] = [
     rating: 4,
     text: "투약 시간 관리와 식사 챙기는 것이 정확하셨습니다. 병원 간호사분들과도 소통이 원활해서 좋았어요.",
   },
+  {
+    author: "한*우 보호자",
+    rating: 3,
+    text: "간병 자체는 꼼꼼하셨지만 초반에 일지 작성 시간이 들쭉날쭉해서 상태 확인이 늦은 날이 있었어요. 중반부터는 시간 맞춰 올려주셔서 괜찮아졌습니다.",
+  },
 ];
 
 const PROGRESS_STEPS: { label: string; desc: string }[] = [
@@ -1323,11 +1865,98 @@ const DIARY: { k: string; v: string; icon: IconName }[] = [
   },
 ];
 
-const MY_MENU: { label: string; icon: IconName }[] = [
-  { label: "간병 이력", icon: "list" },
-  { label: "정산·환급 내역", icon: "wallet" },
-  { label: "서류 발급", icon: "fileText" },
-  { label: "1:1 문의 (Q&A)", icon: "message" },
-  { label: "자주 묻는 질문 (FAQ)", icon: "alert" },
-  { label: "고객만족도 평가", icon: "thumbsUp" },
+const MY_MENU: { label: string; icon: IconName; sheet: SheetKey }[] = [
+  { label: "간병 이력", icon: "list", sheet: "history" },
+  { label: "정산·환급 내역", icon: "wallet", sheet: "settlement" },
+  { label: "서류 발급", icon: "fileText", sheet: "docs" },
+  { label: "1:1 문의 (Q&A)", icon: "message", sheet: "qna" },
+  { label: "자주 묻는 질문 (FAQ)", icon: "alert", sheet: "faq" },
+  { label: "고객만족도 평가", icon: "thumbsUp", sheet: "qna" },
+];
+
+// ── 바텀시트 데이터 ─────────────────────────────────────────────
+
+const HISTORY: {
+  date: string;
+  caregiver: string;
+  patient: string;
+  period: string;
+  amount: string;
+  status: "진행중" | "완료";
+}[] = [
+  {
+    date: "2026-06-24",
+    caregiver: "김미숙",
+    patient: "김O O (부)",
+    period: "6/25 ~ 7/9 · 14일",
+    amount: "1,540,000원",
+    status: "진행중",
+  },
+  {
+    date: "2025-11-12",
+    caregiver: "박정자",
+    patient: "김O O (부)",
+    period: "2025/11/12 ~ 11/21 · 10일",
+    amount: "1,050,000원",
+    status: "완료",
+  },
+  {
+    date: "2025-03-04",
+    caregiver: "최순영",
+    patient: "이O O (모)",
+    period: "2025/3/4 ~ 3/10 · 7일",
+    amount: "735,000원",
+    status: "완료",
+  },
+];
+
+const SETTLEMENTS: {
+  date: string;
+  label: string;
+  amount: string;
+  kind: "결제" | "환급";
+}[] = [
+  { date: "2026-06-24", label: "간병비 안전결제 예치", amount: "1,694,000원", kind: "결제" },
+  { date: "2025-11-22", label: "조기 종료 잔여 간병비 환급", amount: "105,000원", kind: "환급" },
+  { date: "2025-11-12", label: "간병비 안전결제 예치", amount: "1,155,000원", kind: "결제" },
+  { date: "2025-03-11", label: "간병 완료 정산", amount: "735,000원", kind: "결제" },
+];
+
+const DOCS: string[] = [
+  "간병비 결제 영수증",
+  "간병 중개 계약서",
+  "간병 확인서 (보험청구용)",
+  "현금영수증·세금계산서",
+];
+
+const QNA: { q: string; a: string; date: string }[] = [
+  {
+    q: "간병인 변경이 가능한가요?",
+    a: "간병 시작 전에는 무료로 변경 가능하며, 진행 중에는 사유 확인 후 대체 간병인을 24시간 내 재매칭해 드립니다.",
+    date: "2026-06-20",
+  },
+  {
+    q: "실손보험 청구용 서류는 어디서 받나요?",
+    a: "마이 > 서류 발급에서 '간병 확인서(보험청구용)'를 즉시 PDF로 받으실 수 있습니다.",
+    date: "2026-06-18",
+  },
+];
+
+const FAQ: { q: string; a: string }[] = [
+  {
+    q: "간병비는 언제, 어떻게 정산되나요?",
+    a: "결제하신 간병비는 안전결제로 예치되며, 간병 종료일 다음 영업일에 간병인에게 자동 정산됩니다. 중도 종료 시 일할 계산하여 잔여 간병비를 환급합니다.",
+  },
+  {
+    q: "간병인의 신원과 보험은 어떻게 검증되나요?",
+    a: "모든 간병인은 신분증·자격증 검증과 배상책임보험 가입을 완료한 경우에만 매칭됩니다. 간병 중 사고 발생 시 보험으로 배상됩니다.",
+  },
+  {
+    q: "간병 도중 간병인을 바꿀 수 있나요?",
+    a: "1:1 문의로 사유를 접수하시면 확인 후 대체 간병인을 24시간 내 재매칭해 드리며, 공백 기간의 간병비는 청구되지 않습니다.",
+  },
+  {
+    q: "심평원 연계 병원 정보는 무엇인가요?",
+    a: "건강보험심사평가원 데이터와 연계해 병원명·진료과 정보를 확인할 수 있어 입원 병원을 정확하게 선택하실 수 있습니다.",
+  },
 ];

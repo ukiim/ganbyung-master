@@ -1,11 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Card, Badge, Button } from "@/components/ui";
 import { Icon, type IconName } from "@/components/Icon";
 import { LineChart, BarChart, DonutChart } from "@/components/Charts";
+import { CountUp } from "@/components/CountUp";
 import { won } from "@/lib/data";
+
+// ── 데스크탑용 로컬 토스트 (우하단 고정) ──────────────────────────
+// 공용 useToast(Toast.tsx)는 폰 프레임 하단 중앙용이므로, 콘솔에는
+// fixed bottom-right 토스트를 별도로 둔다.
+type DeskToast = { id: number; message: string; icon: IconName; tone: "success" | "accent" } | null;
+
+function useDeskToast() {
+  const [toast, setToast] = useState<DeskToast>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const show = useCallback(
+    (message: string, icon: IconName = "checkCircle", tone: "success" | "accent" = "success") => {
+      setToast({ id: Date.now(), message, icon, tone });
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setToast(null), 2600);
+    },
+    []
+  );
+
+  const node = toast ? (
+    <div className="pointer-events-none fixed bottom-6 right-6 z-50 flex justify-end">
+      <div
+        key={toast.id}
+        role="status"
+        aria-live="polite"
+        className="animate-toast-in flex max-w-xs items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-lg"
+      >
+        <span
+          className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+            toast.tone === "accent"
+              ? "bg-accent/10 text-accent"
+              : "bg-emerald-50 text-emerald-700"
+          }`}
+        >
+          <Icon name={toast.icon} className="h-4 w-4" />
+        </span>
+        {toast.message}
+      </div>
+    </div>
+  ) : null;
+
+  return { show, node };
+}
 
 // ── 네비게이션 정의 ───────────────────────────────────────────────
 type NavKey = "dashboard" | "userCheck" | "coins" | "message";
@@ -199,7 +243,9 @@ const STATUS_TONE: Record<LiveRow["status"], "success" | "primary" | "warning"> 
   정산대기: "warning",
 };
 
-function DashboardSection() {
+type ToastFn = (message: string, icon?: IconName, tone?: "success" | "accent") => void;
+
+function DashboardSection({ show }: { show: ToastFn }) {
   return (
     <div className="space-y-6">
       {/* KPI 카드 */}
@@ -214,9 +260,10 @@ function DashboardSection() {
               </span>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">{k.label}</p>
-            <p className="mt-1 text-2xl font-bold tnum text-foreground">
-              {k.value}
-            </p>
+            <CountUp
+              value={k.value}
+              className="mt-1 block text-2xl font-bold tnum text-foreground"
+            />
             <p
               className={`mt-2 inline-flex items-center gap-1 text-xs font-semibold ${k.deltaTone}`}
             >
@@ -247,6 +294,7 @@ function DashboardSection() {
           <LineChart
             data={[142, 168, 151, 189, 205, 176, 231]}
             labels={["월", "화", "수", "목", "금", "토", "일"]}
+            unit="건"
           />
         </Card>
 
@@ -294,6 +342,7 @@ function DashboardSection() {
             { label: "5월", value: 224 },
             { label: "6월", value: 218 },
           ]}
+          unit="백만원"
         />
       </Card>
 
@@ -303,7 +352,12 @@ function DashboardSection() {
           title="실시간 간병 현황"
           sub="진행중 · 매칭완료 · 정산대기 건"
           right={
-            <Button variant="outlined" size="md" className="hidden sm:inline-flex">
+            <Button
+              variant="outlined"
+              size="md"
+              className="hidden sm:inline-flex"
+              onClick={() => show("실시간 간병 현황 CSV를 내려받았습니다", "download")}
+            >
               <Icon name="download" className="h-4 w-4" />
               내보내기
             </Button>
@@ -440,29 +494,62 @@ function DocPill({ label, ok }: { label: string; ok: boolean }) {
   );
 }
 
-function UserCheckSection() {
+type Decision = "pending" | "approved" | "rejected";
+
+function UserCheckSection({ show }: { show: ToastFn }) {
+  const [decisions, setDecisions] = useState<Record<string, Decision>>({});
+
+  const decide = (a: Applicant, next: "approved" | "rejected") => {
+    setDecisions((prev) => ({ ...prev, [a.name]: next }));
+    if (next === "approved") {
+      show(`${a.name} 간병인을 승인했습니다`, "checkCircle", "success");
+    } else {
+      show(`${a.name} 신청을 반려했습니다`, "x", "accent");
+    }
+  };
+
+  const decisionOf = (name: string): Decision => decisions[name] ?? "pending";
+
   const total = APPLICANTS.length;
-  const ready = APPLICANTS.filter((a) =>
-    DOC_KEYS.every((k) => a.docs[k])
+  const pendingCount = APPLICANTS.filter(
+    (a) => decisionOf(a.name) === "pending"
   ).length;
+  const approvedCount = APPLICANTS.filter(
+    (a) => decisionOf(a.name) === "approved"
+  ).length;
+  const ready = APPLICANTS.filter((a) => DOC_KEYS.every((k) => a.docs[k])).length;
 
   return (
     <div className="space-y-6">
       {/* 요약 */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-4">
         <Card className="p-5">
           <p className="text-sm text-muted-foreground">승인 대기</p>
-          <p className="mt-1 text-2xl font-bold tnum text-foreground">{total}명</p>
+          <CountUp
+            value={`${pendingCount}명`}
+            className="mt-1 block text-2xl font-bold tnum text-foreground"
+          />
+        </Card>
+        <Card className="p-5">
+          <p className="text-sm text-muted-foreground">금일 승인</p>
+          <CountUp
+            value={`${approvedCount}명`}
+            className="mt-1 block text-2xl font-bold tnum text-primary"
+          />
         </Card>
         <Card className="p-5">
           <p className="text-sm text-muted-foreground">서류 완비</p>
-          <p className="mt-1 text-2xl font-bold tnum text-primary">{ready}명</p>
+          <CountUp
+            value={`${ready}명`}
+            className="mt-1 block text-2xl font-bold tnum text-primary"
+          />
         </Card>
         <Card className="p-5">
           <p className="text-sm text-muted-foreground">서류 보완 필요</p>
-          <p className="mt-1 text-2xl font-bold tnum text-accent">
-            {total - ready}명
-          </p>
+          <CountUp
+            value={`${total - ready}명`}
+            className="mt-1 block text-2xl font-bold tnum text-accent"
+          />
         </Card>
       </div>
 
@@ -475,10 +562,16 @@ function UserCheckSection() {
         <ul className="space-y-3">
           {APPLICANTS.map((a) => {
             const complete = DOC_KEYS.every((k) => a.docs[k]);
+            const decision = decisionOf(a.name);
+            const handled = decision !== "pending";
             return (
               <li
                 key={a.name}
-                className="rounded-[var(--radius-md)] border border-border p-4 transition-colors hover:bg-muted/50"
+                className={`rounded-[var(--radius-md)] border p-4 transition-colors ${
+                  handled
+                    ? "border-border bg-muted/40 opacity-70"
+                    : "border-border hover:bg-muted/50"
+                }`}
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex items-start gap-3">
@@ -491,6 +584,18 @@ function UserCheckSection() {
                         <span className="text-sm text-muted-foreground tnum">
                           {a.gender} · {a.age}세 · {a.region}
                         </span>
+                        {decision === "approved" && (
+                          <Badge tone="success">
+                            <Icon name="checkCircle" className="h-3 w-3" />
+                            승인됨
+                          </Badge>
+                        )}
+                        {decision === "rejected" && (
+                          <Badge tone="accent">
+                            <Icon name="x" className="h-3 w-3" />
+                            반려됨
+                          </Badge>
+                        )}
                         {complete ? (
                           <Badge tone="success">서류 완비</Badge>
                         ) : (
@@ -515,22 +620,36 @@ function UserCheckSection() {
                     </div>
                   </div>
                   <div className="flex shrink-0 gap-2 lg:flex-col">
-                    <Button
-                      size="md"
-                      variant="filled"
-                      className="flex-1 lg:w-28"
-                    >
-                      <Icon name="check" className="h-4 w-4" />
-                      승인
-                    </Button>
-                    <Button
-                      size="md"
-                      variant="outlined"
-                      className="flex-1 lg:w-28"
-                    >
-                      <Icon name="x" className="h-4 w-4" />
-                      반려
-                    </Button>
+                    {handled ? (
+                      <span className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--radius-md)] px-5 text-sm font-semibold text-muted-foreground lg:w-28">
+                        <Icon
+                          name={decision === "approved" ? "checkCircle" : "x"}
+                          className="h-4 w-4"
+                        />
+                        {decision === "approved" ? "승인 완료" : "반려 완료"}
+                      </span>
+                    ) : (
+                      <>
+                        <Button
+                          size="md"
+                          variant="filled"
+                          className="flex-1 lg:w-28"
+                          onClick={() => decide(a, "approved")}
+                        >
+                          <Icon name="check" className="h-4 w-4" />
+                          승인
+                        </Button>
+                        <Button
+                          size="md"
+                          variant="outlined"
+                          className="flex-1 lg:w-28"
+                          onClick={() => decide(a, "rejected")}
+                        >
+                          <Icon name="x" className="h-4 w-4" />
+                          반려
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </li>
@@ -574,7 +693,19 @@ const METHOD_ICON: Record<SettleRow["method"], IconName> = {
   카드: "creditCard",
 };
 
-function CoinsSection() {
+type SettleStatusFilter = "전체" | "정산완료" | "정산대기";
+type SettlePeriodFilter = "전체" | "6/24" | "6/23" | "6/22" | "6/21" | "6/20";
+
+function CoinsSection({ show }: { show: ToastFn }) {
+  const [statusFilter, setStatusFilter] = useState<SettleStatusFilter>("전체");
+  const [periodFilter, setPeriodFilter] = useState<SettlePeriodFilter>("전체");
+
+  const filtered = SETTLE_ROWS.filter(
+    (r) =>
+      (statusFilter === "전체" || r.status === statusFilter) &&
+      (periodFilter === "전체" || r.date === periodFilter)
+  );
+
   const monthVolume = 1187000000;
   const feeRevenue = SETTLE_ROWS.reduce((s, r) => s + r.fee, 0) + 96420000;
   const done = SETTLE_ROWS.filter((r) => r.status === "정산완료").length;
@@ -588,6 +719,9 @@ function CoinsSection() {
       { label: "정산 대기", value: `${pending + 8}건`, icon: "clock", tone: "bg-amber-50 text-amber-700" },
     ];
 
+  const statusTabs: SettleStatusFilter[] = ["전체", "정산완료", "정산대기"];
+  const periodTabs: SettlePeriodFilter[] = ["전체", "6/24", "6/23", "6/22", "6/21", "6/20"];
+
   return (
     <div className="space-y-6">
       {/* 요약 KPI */}
@@ -600,9 +734,10 @@ function CoinsSection() {
               <Icon name={s.icon} className="h-5 w-5" />
             </span>
             <p className="mt-4 text-sm text-muted-foreground">{s.label}</p>
-            <p className="mt-1 text-2xl font-bold tnum text-foreground">
-              {s.value}
-            </p>
+            <CountUp
+              value={s.value}
+              className="mt-1 block text-2xl font-bold tnum text-foreground"
+            />
           </Card>
         ))}
       </div>
@@ -613,12 +748,72 @@ function CoinsSection() {
           title="결제 · 정산 내역"
           sub="중개수수료 10% · 간병 종료 후 자동 정산"
           right={
-            <Button variant="outlined" size="md" className="hidden sm:inline-flex">
+            <Button
+              variant="outlined"
+              size="md"
+              className="hidden sm:inline-flex"
+              onClick={() =>
+                show(
+                  `정산서 ${filtered.length}건을 PDF로 출력했습니다`,
+                  "download"
+                )
+              }
+            >
               <Icon name="download" className="h-4 w-4" />
               정산서 출력
             </Button>
           }
         />
+
+        {/* 필터 */}
+        <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <div className="flex items-center gap-1.5">
+            <Icon name="filter" className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-semibold text-muted-foreground">상태</span>
+            <div className="flex gap-1">
+              {statusTabs.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setStatusFilter(t)}
+                  aria-pressed={statusFilter === t}
+                  className={`min-h-11 rounded-[var(--radius-md)] px-3 text-sm font-medium transition-colors ${
+                    statusFilter === t
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Icon name="calendar" className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-semibold text-muted-foreground">기간</span>
+            <div className="flex flex-wrap gap-1">
+              {periodTabs.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setPeriodFilter(t)}
+                  aria-pressed={periodFilter === t}
+                  className={`min-h-11 rounded-[var(--radius-md)] px-3 text-sm font-medium tnum transition-colors ${
+                    periodFilter === t
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <span className="ml-auto text-xs text-muted-foreground tnum">
+            {filtered.length}건 표시
+          </span>
+        </div>
+
         <div className="-mx-6 overflow-x-auto">
           <table className="w-full min-w-[820px] text-sm">
             <thead>
@@ -633,7 +828,17 @@ function CoinsSection() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {SETTLE_ROWS.map((r, i) => (
+              {filtered.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-6 py-10 text-center text-sm text-muted-foreground"
+                  >
+                    조건에 해당하는 정산 내역이 없습니다.
+                  </td>
+                </tr>
+              )}
+              {filtered.map((r, i) => (
                 <tr key={i} className="transition-colors hover:bg-muted/60">
                   <td className="px-6 py-3.5 text-muted-foreground tnum">
                     {r.date}
@@ -716,10 +921,26 @@ const SATISFACTION = [
   { star: 1, count: 120 },
 ];
 
-function MessageSection() {
+type VocFilter = "전체" | "대기" | "답변완료";
+
+function MessageSection({ show }: { show: ToastFn }) {
+  const [vocFilter, setVocFilter] = useState<VocFilter>("전체");
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
   const pending = VOCS.filter((v) => v.status === "대기").length;
+  const answered = VOCS.length - pending;
   const totalReviews = SATISFACTION.reduce((s, v) => s + v.count, 0);
   const maxCount = Math.max(...SATISFACTION.map((s) => s.count));
+
+  const filtered = VOCS.map((v, idx) => ({ v, idx })).filter(
+    ({ v }) => vocFilter === "전체" || v.status === vocFilter
+  );
+
+  const filterTabs: { key: VocFilter; label: string; count: number }[] = [
+    { key: "전체", label: "전체", count: VOCS.length },
+    { key: "대기", label: "답변대기", count: pending },
+    { key: "답변완료", label: "답변완료", count: answered },
+  ];
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
@@ -731,39 +952,133 @@ function MessageSection() {
             sub={`전체 ${VOCS.length}건 · 미답변 ${pending}건`}
             right={<Badge tone="warning">대기 {pending}</Badge>}
           />
-          <ul className="divide-y divide-border">
-            {VOCS.map((v, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-3 py-3.5 transition-colors hover:bg-muted/40"
+
+          {/* 상태 필터 */}
+          <div className="mb-3 flex flex-wrap gap-1">
+            {filterTabs.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => {
+                  setVocFilter(t.key);
+                  setOpenIdx(null);
+                }}
+                aria-pressed={vocFilter === t.key}
+                className={`inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-sm font-medium transition-colors ${
+                  vocFilter === t.key
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
               >
-                <Avatar name={v.name} color={v.color} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground">
-                      {v.name}
-                    </span>
-                    <Badge tone={v.from === "보호자" ? "primary" : "accent"}>
-                      {v.from}
-                    </Badge>
-                    <Badge tone={CATEGORY_TONE[v.category]}>{v.category}</Badge>
-                  </div>
-                  <p className="mt-1 truncate text-sm text-muted-foreground">
-                    {v.title}
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
-                  <StatusBadge
-                    tone={v.status === "답변완료" ? "success" : "warning"}
-                  >
-                    {v.status}
-                  </StatusBadge>
-                  <span className="text-xs text-muted-foreground tnum">
-                    {v.date}
-                  </span>
-                </div>
-              </li>
+                {t.label}
+                <span className="tnum text-xs opacity-70">{t.count}</span>
+              </button>
             ))}
+          </div>
+
+          <ul className="divide-y divide-border">
+            {filtered.map(({ v, idx }) => {
+              const open = openIdx === idx;
+              return (
+                <li key={idx}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenIdx(open ? null : idx)}
+                    aria-expanded={open}
+                    className="flex w-full items-start gap-3 py-3.5 text-left transition-colors hover:bg-muted/40"
+                  >
+                    <Avatar name={v.name} color={v.color} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-foreground">
+                          {v.name}
+                        </span>
+                        <Badge tone={v.from === "보호자" ? "primary" : "accent"}>
+                          {v.from}
+                        </Badge>
+                        <Badge tone={CATEGORY_TONE[v.category]}>
+                          {v.category}
+                        </Badge>
+                      </div>
+                      <p
+                        className={`mt-1 text-sm text-muted-foreground ${
+                          open ? "" : "truncate"
+                        }`}
+                      >
+                        {v.title}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <StatusBadge
+                        tone={v.status === "답변완료" ? "success" : "warning"}
+                      >
+                        {v.status}
+                      </StatusBadge>
+                      <span className="text-xs text-muted-foreground tnum">
+                        {v.date}
+                      </span>
+                    </div>
+                    <Icon
+                      name="chevronDown"
+                      className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                        open ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {open && (
+                    <div className="animate-fade-up mb-3 ml-11 rounded-[var(--radius-md)] border border-border bg-muted/40 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        문의 내용
+                      </p>
+                      <p className="mt-1.5 text-sm leading-relaxed text-foreground">
+                        {v.title}
+                      </p>
+                      <p className="mt-3 text-xs text-muted-foreground tnum">
+                        접수 {v.date} · {v.from} {v.name}
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {v.status === "대기" ? (
+                          <Button
+                            size="md"
+                            variant="filled"
+                            onClick={() =>
+                              show(
+                                `${v.name}님께 답변을 전송했습니다`,
+                                "checkCircle"
+                              )
+                            }
+                          >
+                            <Icon name="message" className="h-4 w-4" />
+                            답변 등록
+                          </Button>
+                        ) : (
+                          <span className="inline-flex min-h-11 items-center gap-1.5 px-1 text-sm font-medium text-emerald-700">
+                            <Icon name="checkCircle" className="h-4 w-4" />
+                            답변 완료된 문의입니다
+                          </span>
+                        )}
+                        <Button
+                          size="md"
+                          variant="outlined"
+                          onClick={() =>
+                            show(`${v.name}님 상담 이력을 열었습니다`, "user")
+                          }
+                        >
+                          <Icon name="user" className="h-4 w-4" />
+                          상담 이력
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+            {filtered.length === 0 && (
+              <li className="py-10 text-center text-sm text-muted-foreground">
+                해당 상태의 문의가 없습니다.
+              </li>
+            )}
           </ul>
         </Card>
       </div>
@@ -812,9 +1127,11 @@ function MessageSection() {
 // ════════════════════════════════════════════════════════════════
 export default function AdminPage() {
   const [active, setActive] = useState<NavKey>("dashboard");
+  const { show, node: toastNode } = useDeskToast();
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
+      {toastNode}
       {/* 좌측 사이드바 (데스크탑) */}
       <aside className="hidden w-60 shrink-0 border-r border-border bg-card lg:block">
         <div className="px-5 py-6">
@@ -890,8 +1207,17 @@ export default function AdminPage() {
               </span>
               <button
                 type="button"
-                aria-label="알림"
+                aria-label="검색"
+                className="hidden h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:inline-flex"
+                onClick={() => show("검색 패널은 준비 중입니다", "search", "accent")}
+              >
+                <Icon name="search" className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                aria-label="알림 3건"
                 className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                onClick={() => show("새 알림 3건이 있습니다", "bell", "accent")}
               >
                 <Icon name="bell" className="h-5 w-5" />
                 <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-accent" />
@@ -906,10 +1232,12 @@ export default function AdminPage() {
           </div>
 
           {/* 섹션 내용 */}
-          {active === "dashboard" && <DashboardSection />}
-          {active === "userCheck" && <UserCheckSection />}
-          {active === "coins" && <CoinsSection />}
-          {active === "message" && <MessageSection />}
+          <div key={active} className="animate-screen-in">
+            {active === "dashboard" && <DashboardSection show={show} />}
+            {active === "userCheck" && <UserCheckSection show={show} />}
+            {active === "coins" && <CoinsSection show={show} />}
+            {active === "message" && <MessageSection show={show} />}
+          </div>
         </div>
       </div>
     </div>
