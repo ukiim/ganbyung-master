@@ -312,6 +312,13 @@ export default function CaregiverAppPage() {
     [typeFilter, regionFilter],
   );
 
+  // 언마운트 시 진행 중 로딩 타이머 정리(메모리 누수 방지).
+  useEffect(() => {
+    return () => {
+      if (loadingTimer.current) clearTimeout(loadingTimer.current);
+    };
+  }, []);
+
   // 일자리 화면 진입 또는 필터 변경 시 ~500ms 스켈레톤 후 결과 노출.
   useEffect(() => {
     if (screen !== "jobs") return;
@@ -471,7 +478,7 @@ export default function CaregiverAppPage() {
               </span>
               <span className="flex-1">
                 <span className="block text-sm font-semibold text-foreground">
-                  신규 지명 제안 1건
+                  신규 지명 제안 {JOBS.filter((j) => j.type === "지명").length}건
                 </span>
                 <span className="block text-xs text-muted-foreground">
                   {JOBS[0].hospital} · 보호자가 직접 지명했어요

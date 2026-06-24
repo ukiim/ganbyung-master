@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 // 무의존 인라인 SVG 차트 (라인/바/도넛). 그리기 애니메이션 + hover 툴팁 포함.
 
@@ -53,6 +53,7 @@ export function LineChart({
 }) {
   const w = 520;
   const h = height;
+  const gid = "line-fill-" + useId().replace(/:/g, "");
   const pad = { t: 16, r: 12, b: 24, l: 12 };
   const max = Math.max(...data) * 1.15;
   const min = Math.min(...data) * 0.85;
@@ -81,7 +82,7 @@ export function LineChart({
       <Tooltip tip={tip} />
       <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="추이 차트">
         <defs>
-          <linearGradient id="line-fill" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="var(--primary)" stopOpacity="0.22" />
             <stop offset="1" stopColor="var(--primary)" stopOpacity="0" />
           </linearGradient>
@@ -97,7 +98,7 @@ export function LineChart({
             strokeWidth="1"
           />
         ))}
-        <path d={area} fill="url(#line-fill)" />
+        <path d={area} fill={`url(#${gid})`} />
         {/* 소프트 글로우 */}
         <path
           d={line}
@@ -191,13 +192,14 @@ export function BarChart({
   const bw = Math.min(slot * 0.55, 46);
   const [hover, setHover] = useState<number | null>(null);
   const [tip, setTip] = useState<Tip>(null);
+  const gid = "bar-grad-" + useId().replace(/:/g, "");
 
   return (
     <div className={`relative w-full ${className}`}>
       <Tooltip tip={tip} />
       <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="막대 차트">
         <defs>
-          <linearGradient id="bar-grad" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#16b886" />
             <stop offset="1" stopColor="var(--primary)" />
           </linearGradient>
@@ -244,7 +246,7 @@ export function BarChart({
                 height={bh}
                 rx="5"
                 className="chart-bar-grow"
-                fill="url(#bar-grad)"
+                fill={`url(#${gid})`}
                 opacity={active ? 1 : 0.62 + 0.38 * (d.value / max)}
                 style={{ animationDelay: `${i * 80}ms` }}
               />

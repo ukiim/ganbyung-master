@@ -272,9 +272,11 @@ html.large-text {
   }
 }
 
-/* 고령자 큰글씨 모드 — 폰 화면 콘텐츠 영역에 적용 (zoom 비례 확대) */
-.app-zoomed {
-  zoom: 1.14;
+/* 고대비 모드: 그라데이션 텍스트는 저대비라 솔리드 전경색으로 폴백 */
+:root.high-contrast .text-gradient {
+  background-image: none;
+  -webkit-text-fill-color: var(--foreground);
+  color: var(--foreground);
 }
 
 /* ===== Phase 4: 시각·경험 craft ===== */

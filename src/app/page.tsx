@@ -112,19 +112,19 @@ export default function Home() {
                 간병의 처음부터 끝까지 간병마스터가 함께합니다.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Magnetic>
+                <Magnetic className="w-full sm:w-auto">
                   <TransitionLink
                     href="/patient"
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary px-7 py-3 text-base font-semibold text-primary-foreground shadow-sm transition-all hover:shadow-[var(--shadow-primary)] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98]"
+                    className="inline-flex w-full min-h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary px-7 py-3 text-base font-semibold text-primary-foreground shadow-sm transition-all hover:shadow-[var(--shadow-primary)] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98] sm:w-auto"
                   >
                     환자·보호자 앱 체험
                     <Icon name="arrowRight" className="h-5 w-5" />
                   </TransitionLink>
                 </Magnetic>
-                <Magnetic>
+                <Magnetic className="w-full sm:w-auto">
                   <TransitionLink
                     href="/admin"
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-border px-7 py-3 text-base font-semibold text-foreground transition-all hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98]"
+                    className="inline-flex w-full min-h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-border px-7 py-3 text-base font-semibold text-foreground transition-all hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98] sm:w-auto"
                   >
                     관리자 콘솔 보기
                   </TransitionLink>

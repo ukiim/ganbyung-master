@@ -333,7 +333,7 @@ function DashboardSection({ show }: { show: ToastFn }) {
             }
           />
           <LineChart
-            data={[142, 168, 151, 189, 205, 176, 231]}
+            data={[142, 168, 151, 189, 205, 176, 241]}
             labels={["월", "화", "수", "목", "금", "토", "일"]}
             unit="건"
           />
@@ -480,16 +480,16 @@ function DashboardSection({ show }: { show: ToastFn }) {
             <thead>
               <tr className="sticky top-0 z-10 border-y border-border bg-card text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <th scope="col" className="px-6 py-3">
-                  <span className="inline-flex items-center gap-1">환자<Icon name="chevronDown" className="h-3 w-3 opacity-50" /></span>
+                  <span className="inline-flex items-center gap-1">환자</span>
                 </th>
                 <th scope="col" className="px-6 py-3">간병인</th>
                 <th scope="col" className="px-6 py-3">병원</th>
                 <th scope="col" className="px-6 py-3">
-                  <span className="inline-flex items-center gap-1">기간<Icon name="chevronDown" className="h-3 w-3 opacity-50" /></span>
+                  <span className="inline-flex items-center gap-1">기간</span>
                 </th>
                 <th scope="col" className="px-6 py-3">상태</th>
                 <th scope="col" className="px-6 py-3 text-right">
-                  <span className="inline-flex items-center gap-1">간병비<Icon name="chevronDown" className="h-3 w-3 opacity-50" /></span>
+                  <span className="inline-flex items-center gap-1">간병비</span>
                 </th>
               </tr>
             </thead>
@@ -662,6 +662,7 @@ function UserCheckSection({ show }: { show: ToastFn }) {
         <Card className="p-5">
           <p className="text-sm text-muted-foreground">승인 대기</p>
           <CountUp
+            key={pendingCount}
             value={`${pendingCount}명`}
             className="mt-1 block text-2xl font-bold tnum text-foreground"
           />
@@ -669,6 +670,7 @@ function UserCheckSection({ show }: { show: ToastFn }) {
         <Card className="p-5">
           <p className="text-sm text-muted-foreground">금일 승인</p>
           <CountUp
+            key={approvedCount}
             value={`${approvedCount}명`}
             className="mt-1 block text-2xl font-bold tnum text-primary"
           />
@@ -963,13 +965,13 @@ function CoinsSection({ show }: { show: ToastFn }) {
             <thead>
               <tr className="sticky top-0 z-10 border-y border-border bg-card text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <th scope="col" className="px-6 py-3">
-                  <span className="inline-flex items-center gap-1">일자<Icon name="chevronDown" className="h-3 w-3 opacity-50" /></span>
+                  <span className="inline-flex items-center gap-1">일자</span>
                 </th>
                 <th scope="col" className="px-6 py-3">환자</th>
                 <th scope="col" className="px-6 py-3">간병인</th>
                 <th scope="col" className="px-6 py-3">결제수단</th>
                 <th scope="col" className="px-6 py-3 text-right">
-                  <span className="inline-flex items-center gap-1">결제금액<Icon name="chevronDown" className="h-3 w-3 opacity-50" /></span>
+                  <span className="inline-flex items-center gap-1">결제금액</span>
                 </th>
                 <th scope="col" className="px-6 py-3 text-right">수수료</th>
                 <th scope="col" className="px-6 py-3">상태</th>

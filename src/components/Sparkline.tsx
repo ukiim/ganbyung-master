@@ -24,7 +24,7 @@ export function Sparkline({
     .map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`)
     .join(" ");
   const area = `${line} L${width},${height} L0,${height} Z`;
-  const id = "spark-" + data.join("_").replace(/[^0-9]/g, "");
+  const id = "spark-" + data.join("_").replace(/[^0-9_-]/g, "");
 
   return (
     <svg

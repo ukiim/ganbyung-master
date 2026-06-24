@@ -162,6 +162,16 @@ export default function PatientAppPage() {
   const total = selected.dailyRate * CARE_DAYS;
   const fee = Math.round(total * 0.1);
 
+  // 진행중 건은 선택한 간병인/금액을 따라가도록 동적 치환(화면 간 정합)
+  const historyView = HISTORY.map((h) =>
+    h.status === "진행중"
+      ? { ...h, caregiver: selected.name, amount: won(total) }
+      : h
+  );
+  const settlementsView = SETTLEMENTS.map((s, i) =>
+    i === 0 ? { ...s, amount: won(total + fee) } : s
+  );
+
   // 진행중 간병 존재 + 미확인 알림 여부 → 탭 배지
   const hasActiveCare = true; // 데모: 김미숙 간병인 D+3 진행중
   const hasUnreadAlert = true; // 데모: 새 간병일지·알림톡 미확인
@@ -898,8 +908,10 @@ export default function PatientAppPage() {
               {/* 동의 체크 */}
               <button
                 type="button"
+                role="checkbox"
+                aria-checked={agreed}
                 onClick={() => setAgreed((v) => !v)}
-                className="mt-4 flex w-full items-center gap-3 rounded-[var(--radius-md)] border border-border bg-muted p-3.5 text-left"
+                className="mt-4 flex w-full min-h-11 items-center gap-3 rounded-[var(--radius-md)] border border-border bg-muted p-3.5 text-left"
               >
                 <span
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
@@ -1487,6 +1499,8 @@ export default function PatientAppPage() {
                     )
                   }
                   pending={pending}
+                  history={historyView}
+                  settlements={settlementsView}
                 />
               )}
             </PhoneFrame>
@@ -1562,6 +1576,8 @@ function BottomSheet({
   setOpenFaq,
   onDocIssue,
   pending,
+  history,
+  settlements,
 }: {
   sheet: Exclude<SheetKey, null>;
   onClose: () => void;
@@ -1569,6 +1585,8 @@ function BottomSheet({
   setOpenFaq: (v: number | null) => void;
   onDocIssue: () => void;
   pending: string | null;
+  history: typeof HISTORY;
+  settlements: typeof SETTLEMENTS;
 }) {
   const titles: Record<Exclude<SheetKey, null>, string> = {
     history: "간병 이력",
@@ -1613,7 +1631,7 @@ function BottomSheet({
         <div className="px-4 pt-3">
           {sheet === "history" && (
             <ul className="space-y-2.5">
-              {HISTORY.map((h) => (
+              {history.map((h) => (
                 <li
                   key={h.date}
                   className="rounded-[var(--radius-md)] border border-border bg-card p-3.5"
@@ -1639,7 +1657,7 @@ function BottomSheet({
 
           {sheet === "settlement" && (
             <ul className="space-y-2.5">
-              {SETTLEMENTS.map((s) => (
+              {settlements.map((s) => (
                 <li
                   key={s.date}
                   className="flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-card p-3.5"
