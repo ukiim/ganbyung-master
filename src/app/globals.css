@@ -205,6 +205,14 @@ body {
     transform: scaleY(1);
   }
 }
+@keyframes donutFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 @media (prefers-reduced-motion: no-preference) {
   .chart-line-draw {
     stroke-dasharray: var(--len, 1000);
@@ -217,7 +225,7 @@ body {
     animation: growUp 0.7s cubic-bezier(0.05, 0.7, 0.1, 1) both;
   }
   .chart-donut-draw {
-    animation: drawLine 1s cubic-bezier(0.2, 0, 0, 1) both;
+    animation: donutFade 0.8s ease both;
   }
 }
 

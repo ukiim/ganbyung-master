@@ -23,6 +23,13 @@ export function CountUp({
     const run = () => {
       if (started.current) return;
       started.current = true;
+      if (
+        window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        setDisplay(value);
+        return;
+      }
       animate(value, duration, setDisplay);
     };
     if (typeof IntersectionObserver === "undefined") {

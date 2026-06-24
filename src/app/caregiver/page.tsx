@@ -83,7 +83,7 @@ function ScreenTitle({
           type="button"
           onClick={onBack}
           aria-label="뒤로"
-          className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-muted"
+          className="-ml-1 flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-muted"
         >
           <Icon name="chevronLeft" className="h-5 w-5" />
         </button>
@@ -165,7 +165,7 @@ function BottomSheet({
             type="button"
             onClick={onClose}
             aria-label="바텀시트 닫기"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
           >
             <Icon name="x" className="h-5 w-5" />
           </button>
@@ -183,10 +183,10 @@ const ACTIVE_CARE = {
   patient: "여 / 71세",
   condition: "무릎 인공관절 재활",
   hospital: "강동경희대학교병원",
-  period: "6/10 ~ 6/24",
+  period: "6/20 ~ 7/3",
   days: 14,
   dailyRate: 130000,
-  dayProgress: "D+5", // 6/24 기준 진행 경과
+  dayProgress: "D+5", // 6/20=D+1 → 6/24 기준 D+5
 };
 
 // ── 정산 목업 데이터 (이 화면 전용) ──────────────────────────────────────
@@ -220,11 +220,11 @@ const SETTLEMENTS: Settlement[] = [
     status: "정산완료",
   },
   {
-    // 진행중 간병과 동일 환자 → 종료(6/24) 후 정산예정.
+    // 6/19 종료된 별도 간병 건 → 정산예정. (진행중 간병 6/20~7/3과 분리)
     id: "st-2231",
-    patient: ACTIVE_CARE.patient,
-    hospital: ACTIVE_CARE.hospital,
-    period: ACTIVE_CARE.period,
+    patient: "여 / 76세",
+    hospital: "건국대학교병원",
+    period: "6/6 ~ 6/19",
     days: ACTIVE_CARE.days,
     dailyRate: ACTIVE_CARE.dailyRate,
     status: "정산예정",
@@ -241,19 +241,19 @@ const LOG_HISTORY: {
   note: string;
 }[] = [
   {
-    date: "6/23 (월)",
+    date: "6/23 (화)",
     status: "양호",
     meal: "아침·점심·저녁 완식",
     note: "오전 보행 재활 30분 진행. 통증 호소 없음.",
   },
   {
-    date: "6/22 (일)",
+    date: "6/22 (월)",
     status: "양호",
     meal: "아침 1/2, 점심·저녁 완식",
     note: "수술 부위 소독 후 드레싱 교체. 보호자 통화 완료.",
   },
   {
-    date: "6/21 (토)",
+    date: "6/21 (일)",
     status: "주의",
     meal: "전 끼니 1/3 섭취",
     note: "미열(37.6도) 확인되어 담당 간호사에게 보고함.",
@@ -579,7 +579,7 @@ export default function CaregiverAppPage() {
                     type="button"
                     aria-pressed={on}
                     onClick={() => setTypeFilter(chip)}
-                    className={`min-h-9 shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                    className={`min-h-11 shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
                       on
                         ? "bg-primary text-primary-foreground"
                         : "border border-border bg-card text-muted-foreground hover:bg-muted"
@@ -605,7 +605,7 @@ export default function CaregiverAppPage() {
                     type="button"
                     aria-pressed={on}
                     onClick={() => setRegionFilter(chip)}
-                    className={`min-h-9 shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`min-h-11 shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                       on
                         ? "bg-accent/15 text-accent ring-1 ring-accent/30"
                         : "border border-border bg-card text-muted-foreground hover:bg-muted"
@@ -837,7 +837,7 @@ export default function CaregiverAppPage() {
             <div className="mt-3">
               <KakaoChat
                 messages={negotiateMessages}
-                partnerName="보호자 (환자 보호자)"
+                partnerName="환자 보호자"
               />
             </div>
             <div className="px-4 py-4">
@@ -1064,7 +1064,7 @@ export default function CaregiverAppPage() {
               </label>
               <div className="mt-1.5 flex items-center gap-2 rounded-[var(--radius-md)] border border-border bg-background px-3 py-2.5 text-sm text-foreground">
                 <Icon name="calendar" className="h-4 w-4 text-muted-foreground" />
-                <span className="tnum">2026. 6. 24. (화)</span>
+                <span className="tnum">2026. 6. 24. (수)</span>
               </div>
 
               <label

@@ -40,8 +40,9 @@ export function LineChart({
   const span = max - min || 1;
   const innerW = w - pad.l - pad.r;
   const innerH = h - pad.t - pad.b;
+  const denom = Math.max(1, data.length - 1);
   const pts = data.map((v, i) => {
-    const x = pad.l + (i / (data.length - 1)) * innerW;
+    const x = pad.l + (i / denom) * innerW;
     const y = pad.t + innerH - ((v - min) / span) * innerH;
     return [x, y] as const;
   });
@@ -113,7 +114,7 @@ export function LineChart({
           labels.map((l, i) => (
             <text
               key={l}
-              x={pad.l + (i / (labels.length - 1)) * innerW}
+              x={pad.l + (i / denom) * innerW}
               y={h - 6}
               textAnchor="middle"
               className="fill-[var(--muted-foreground)] text-[11px]"

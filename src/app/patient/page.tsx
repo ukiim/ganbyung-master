@@ -55,7 +55,7 @@ const STEP_INDEX: Record<Screen, number> = {
   negotiate: 4,
   contract: 5,
   payment: 6,
-  success: 6,
+  success: 7,
   progress: 7,
   my: 0,
 };
@@ -249,7 +249,7 @@ export default function PatientAppPage() {
                 </div>
                 <p className="mt-3 text-sm text-white/85">환자 김O O 님</p>
                 <div className="mt-1 flex items-center justify-between">
-                  <p className="text-lg font-bold">담당 간병인 김미숙</p>
+                  <p className="text-lg font-bold">담당 간병인 {selected.name}</p>
                   <span className="inline-flex items-center gap-1 text-sm font-semibold">
                     간병일지 보기
                     <Icon name="chevronRight" className="h-4 w-4" />
@@ -315,7 +315,7 @@ export default function PatientAppPage() {
             <div className="space-y-5 px-4 pb-28 pt-3">
               {/* 환자와의 관계 */}
               <Field label="환자와의 관계">
-                <ChipRow options={["부", "모", "배우자", "본인"]} defaultIndex={1} />
+                <ChipRow options={["부", "모", "배우자", "본인"]} defaultIndex={0} />
               </Field>
 
               {/* 환자 정보 */}
@@ -1537,7 +1537,7 @@ function BottomSheet({
             type="button"
             aria-label="닫기"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
           >
             <Icon name="x" className="h-5 w-5" />
           </button>
@@ -1733,7 +1733,7 @@ function ChipRow({
           key={o}
           type="button"
           onClick={() => setSel(i)}
-          className={`min-h-10 rounded-full px-4 text-sm font-semibold transition-colors ${
+          className={`min-h-11 rounded-full px-4 text-sm font-semibold transition-colors ${
             sel === i
               ? "bg-primary text-primary-foreground"
               : "bg-muted text-muted-foreground hover:bg-border/60"
@@ -1871,7 +1871,6 @@ const MY_MENU: { label: string; icon: IconName; sheet: SheetKey }[] = [
   { label: "서류 발급", icon: "fileText", sheet: "docs" },
   { label: "1:1 문의 (Q&A)", icon: "message", sheet: "qna" },
   { label: "자주 묻는 질문 (FAQ)", icon: "alert", sheet: "faq" },
-  { label: "고객만족도 평가", icon: "thumbsUp", sheet: "qna" },
 ];
 
 // ── 바텀시트 데이터 ─────────────────────────────────────────────
@@ -1889,7 +1888,7 @@ const HISTORY: {
     caregiver: "김미숙",
     patient: "김O O (부)",
     period: "6/25 ~ 7/9 · 14일",
-    amount: "1,540,000원",
+    amount: "1,820,000원",
     status: "진행중",
   },
   {
@@ -1916,7 +1915,7 @@ const SETTLEMENTS: {
   amount: string;
   kind: "결제" | "환급";
 }[] = [
-  { date: "2026-06-24", label: "간병비 안전결제 예치", amount: "1,694,000원", kind: "결제" },
+  { date: "2026-06-24", label: "간병비 안전결제 예치", amount: "2,002,000원", kind: "결제" },
   { date: "2025-11-22", label: "조기 종료 잔여 간병비 환급", amount: "105,000원", kind: "환급" },
   { date: "2025-11-12", label: "간병비 안전결제 예치", amount: "1,155,000원", kind: "결제" },
   { date: "2025-03-11", label: "간병 완료 정산", amount: "735,000원", kind: "결제" },

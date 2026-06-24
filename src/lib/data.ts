@@ -262,7 +262,7 @@ export const FLOW_STEPS = [
   { no: 8, title: "정산·평가", desc: "자동 정산·환급, 만족도 평가", icon: "checkCircle" as const },
 ];
 
-// 대외 연계 인터페이스 (랜딩=icon/title/desc, 아키텍처 페이지=상세 필드)
+// 대외 연계 인터페이스 (랜딩=icon/title/desc)
 export type Interface = {
   icon:
     | "bank"
@@ -273,12 +273,6 @@ export type Interface = {
     | "kakao";
   title: string;
   desc: string;
-  provider: string;
-  method: string;
-  auth: string;
-  direction: "송신" | "수신" | "양방향";
-  spec: string;
-  fallback: string;
 };
 
 export const INTERFACES: Interface[] = [
@@ -286,66 +280,30 @@ export const INTERFACES: Interface[] = [
     icon: "bank",
     title: "은행 즉시이체",
     desc: "간병비 결제·간병료 정산",
-    provider: "금융결제원 오픈뱅킹",
-    method: "REST/HTTPS",
-    auth: "OAuth2 + 전자서명",
-    direction: "양방향",
-    spec: "출금이체/입금이체 API, 잔액·거래내역 조회",
-    fallback: "타임아웃 시 결제 보류·재시도 큐, 가상계좌 폴백",
   },
   {
     icon: "creditCard",
     title: "신용카드 결제승인",
     desc: "카드 결제·취소·환급",
-    provider: "PG사(KSNET/NICE)",
-    method: "REST/HTTPS",
-    auth: "API Key + 가맹점 인증",
-    direction: "양방향",
-    spec: "승인/취소/부분취소/정기결제 토큰",
-    fallback: "승인 지연 시 멱등키로 중복결제 방지",
   },
   {
     icon: "hospital",
     title: "건강보험심사평가원",
     desc: "병원 검색·조회",
-    provider: "심평원 공공데이터 OpenAPI",
-    method: "REST/HTTPS",
-    auth: "서비스키",
-    direction: "수신",
-    spec: "병원·약국 기본정보, 진료과목·병상 조회",
-    fallback: "장애 시 내부 캐시(일 1회 동기화) 사용",
   },
   {
     icon: "shieldCheck",
     title: "화재보험사",
     desc: "간병인 배상책임보험",
-    provider: "손해보험사 단체보험 I/F",
-    method: "SOAP/전문(파일)",
-    auth: "전용선 + 기관 인증서",
-    direction: "양방향",
-    spec: "가입/해지 신청, 보험료 납입내역",
-    fallback: "배치 재전송, 미가입 간병인 매칭 차단",
   },
   {
     icon: "phone",
     title: "휴대폰 본인인증",
     desc: "회원 가입·신원확인",
-    provider: "PASS(통신 3사)",
-    method: "REST/HTTPS",
-    auth: "CP 인증 + 콜백 서명",
-    direction: "양방향",
-    spec: "본인확인 요청/결과 검증(CI/DI)",
-    fallback: "실패 시 아이핀·신분증 인증 대체",
   },
   {
     icon: "kakao",
     title: "카카오 알림톡",
     desc: "간병비 협의·알림",
-    provider: "카카오 비즈메시지",
-    method: "REST/HTTPS",
-    auth: "API Key + 발신프로필",
-    direction: "송신",
-    spec: "템플릿 발송, 전송 결과 수신(webhook)",
-    fallback: "미수신 시 SMS(LMS) 자동 대체 발송",
   },
 ];

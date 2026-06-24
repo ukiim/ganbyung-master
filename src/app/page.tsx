@@ -229,12 +229,14 @@ export default function Home() {
       <Section muted>
         <dl className="grid grid-cols-2 gap-8 text-center md:grid-cols-4">
           {STATS.map((s, i) => (
-            <Reveal key={s.label} delay={i * 70}>
+            <Reveal key={s.label} delay={i * 70} className="flex flex-col-reverse">
+              <dt className="mt-2 font-semibold text-foreground">{s.label}</dt>
               <dd className="text-3xl font-bold text-primary sm:text-4xl">
                 <CountUp value={s.value} />
+                <span className="mt-1 block text-sm font-normal text-muted-foreground">
+                  {s.sub}
+                </span>
               </dd>
-              <dt className="mt-2 font-semibold text-foreground">{s.label}</dt>
-              <p className="mt-1 text-sm text-muted-foreground">{s.sub}</p>
             </Reveal>
           ))}
         </dl>

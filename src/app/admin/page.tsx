@@ -707,15 +707,15 @@ function CoinsSection({ show }: { show: ToastFn }) {
   );
 
   const monthVolume = 1187000000;
-  const feeRevenue = SETTLE_ROWS.reduce((s, r) => s + r.fee, 0) + 96420000;
+  const feeRevenue = monthVolume * 0.1;
   const done = SETTLE_ROWS.filter((r) => r.status === "정산완료").length;
   const pending = SETTLE_ROWS.filter((r) => r.status === "정산대기").length;
 
   const summary: { label: string; value: string; icon: IconName; tone: string }[] =
     [
-      { label: "금월 거래액", value: won(monthVolume), icon: "coins", tone: "bg-primary/10 text-primary" },
+      { label: "최근 6개월 거래액", value: won(monthVolume), icon: "coins", tone: "bg-primary/10 text-primary" },
       { label: "중개수수료 수익", value: won(feeRevenue), icon: "wallet", tone: "bg-primary/10 text-primary" },
-      { label: "정산 완료", value: `${done + 304}건`, icon: "checkCircle", tone: "bg-emerald-50 text-emerald-700" },
+      { label: "정산 완료", value: `${done + 305}건`, icon: "checkCircle", tone: "bg-emerald-50 text-emerald-700" },
       { label: "정산 대기", value: `${pending + 8}건`, icon: "clock", tone: "bg-amber-50 text-amber-700" },
     ];
 
@@ -914,8 +914,8 @@ const CATEGORY_TONE: Record<Voc["category"], "primary" | "accent" | "muted"> = {
 };
 
 const SATISFACTION = [
-  { star: 5, count: 14820 },
-  { star: 4, count: 2740 },
+  { star: 5, count: 16400 },
+  { star: 4, count: 1160 },
   { star: 3, count: 680 },
   { star: 2, count: 240 },
   { star: 1, count: 120 },
@@ -1203,7 +1203,6 @@ export default function AdminPage() {
               <span className="hidden items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:inline-flex">
                 <Icon name="calendar" className="h-3.5 w-3.5" />
                 2026.06.24 · 오늘
-                <Icon name="chevronDown" className="h-3.5 w-3.5" />
               </span>
               <button
                 type="button"
