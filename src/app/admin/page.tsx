@@ -8,6 +8,9 @@ import { LineChart, BarChart, DonutChart } from "@/components/Charts";
 import { CountUp } from "@/components/CountUp";
 import { Avatar as IllustAvatar } from "@/components/Avatar";
 import { EmptyState } from "@/components/EmptyState";
+import { Sparkline } from "@/components/Sparkline";
+import { ProgressRing } from "@/components/ProgressRing";
+import { HeartPulseMotif } from "@/components/illustrations";
 import { won } from "@/lib/data";
 
 // ── 데스크탑용 로컬 토스트 (우하단 고정) ──────────────────────────
@@ -133,6 +136,8 @@ const KPIS: {
   delta: string;
   deltaIcon: IconName;
   deltaTone: string;
+  trend: number[];
+  trendColor: string;
 }[] = [
   {
     label: "진행중 간병",
@@ -142,6 +147,8 @@ const KPIS: {
     delta: "전주 대비 +3.2%",
     deltaIcon: "trendingUp",
     deltaTone: "text-primary",
+    trend: [1198, 1215, 1224, 1241, 1236, 1262, 1284],
+    trendColor: "var(--primary)",
   },
   {
     label: "금일 신규 매칭",
@@ -151,6 +158,8 @@ const KPIS: {
     delta: "어제 대비 +12건",
     deltaIcon: "trendingUp",
     deltaTone: "text-primary",
+    trend: [64, 71, 58, 79, 72, 75, 87],
+    trendColor: "var(--primary)",
   },
   {
     label: "신원검증 승인대기",
@@ -160,6 +169,8 @@ const KPIS: {
     delta: "확인 필요",
     deltaIcon: "alert",
     deltaTone: "text-accent",
+    trend: [6, 8, 5, 9, 11, 9, 12],
+    trendColor: "var(--accent)",
   },
   {
     label: "금일 정산액",
@@ -169,6 +180,8 @@ const KPIS: {
     delta: "정산 완료 312건",
     deltaIcon: "check",
     deltaTone: "text-muted-foreground",
+    trend: [33.1, 36.4, 30.8, 39.5, 38.2, 40.6, 42.18],
+    trendColor: "var(--primary)",
   },
 ];
 
@@ -247,6 +260,27 @@ const STATUS_TONE: Record<LiveRow["status"], "success" | "primary" | "warning"> 
 
 type ToastFn = (message: string, icon?: IconName, tone?: "success" | "accent") => void;
 
+// ── 실시간 활동 피드 ──────────────────────────────────────────────
+type ActivityKind = "매칭" | "결제" | "승인";
+
+const ACTIVITY_META: Record<
+  ActivityKind,
+  { icon: IconName; tone: "primary" | "accent" | "success"; stripe: string }
+> = {
+  매칭: { icon: "handshake", tone: "success", stripe: "var(--primary)" },
+  결제: { icon: "creditCard", tone: "primary", stripe: "#2563eb" },
+  승인: { icon: "userCheck", tone: "accent", stripe: "var(--accent)" },
+};
+
+const ACTIVITY_FEED: { kind: ActivityKind; desc: string; time: string }[] = [
+  { kind: "매칭", desc: "김미숙 간병인 ↔ 서울아산병원 신규 매칭", time: "방금" },
+  { kind: "결제", desc: "이OO 보호자 간병비 4,050,000원 결제 완료", time: "2분 전" },
+  { kind: "승인", desc: "정해숙 간병인 신원검증 승인", time: "8분 전" },
+  { kind: "매칭", desc: "이영호 간병인 ↔ 건국대학교병원 지명 매칭", time: "14분 전" },
+  { kind: "결제", desc: "한OO 보호자 간병비 2,346,000원 정산 대기", time: "21분 전" },
+  { kind: "승인", desc: "박정자 간병인 배상책임보험 갱신 확인", time: "35분 전" },
+];
+
 function DashboardSection({ show }: { show: ToastFn }) {
   return (
     <div className="space-y-6">
@@ -254,12 +288,17 @@ function DashboardSection({ show }: { show: ToastFn }) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {KPIS.map((k) => (
           <Card key={k.label} className="p-5">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-2">
               <span
                 className={`inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] ${k.iconTone}`}
               >
                 <Icon name={k.icon} className="h-5 w-5" />
               </span>
+              <Sparkline
+                data={k.trend}
+                color={k.trendColor}
+                className="mt-1 h-7 w-[88px] opacity-90"
+              />
             </div>
             <p className="mt-4 text-sm text-muted-foreground">{k.label}</p>
             <CountUp
@@ -321,6 +360,77 @@ function DashboardSection({ show }: { show: ToastFn }) {
         </Card>
       </div>
 
+      {/* 실시간 활동 + 운영 지표 게이지 */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* 실시간 활동 피드 */}
+        <Card className="lg:col-span-2">
+          <CardTitle
+            title="실시간 활동"
+            sub="매칭 · 결제 · 승인 최근 이벤트"
+            right={
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                </span>
+                LIVE
+              </span>
+            }
+          />
+          <ul className="space-y-2">
+            {ACTIVITY_FEED.map((a, i) => {
+              const meta = ACTIVITY_META[a.kind];
+              return (
+                <li
+                  key={i}
+                  className={`relative flex items-center gap-3 overflow-hidden rounded-[var(--radius-md)] border border-border bg-card py-2.5 pl-4 pr-3 ${
+                    i === 0 ? "animate-flash" : ""
+                  }`}
+                >
+                  <span
+                    className="absolute inset-y-0 left-0 w-1 rounded-l-[var(--radius-md)]"
+                    style={{ background: meta.stripe }}
+                    aria-hidden="true"
+                  />
+                  <span
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: `color-mix(in srgb, ${meta.stripe} 12%, transparent)`, color: meta.stripe }}
+                  >
+                    <Icon name={meta.icon} className="h-4 w-4" />
+                  </span>
+                  <p className="min-w-0 flex-1 truncate text-sm text-foreground">
+                    {a.desc}
+                  </p>
+                  <StatusBadge tone={meta.tone}>{a.kind}</StatusBadge>
+                  <span className="w-12 shrink-0 text-right text-xs text-muted-foreground tnum">
+                    {a.time}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+
+        {/* 운영 지표 게이지 */}
+        <Card>
+          <CardTitle title="운영 지표" sub="당일 처리 현황" />
+          <div className="grid grid-cols-2 gap-4 pt-1">
+            <div className="flex flex-col items-center gap-2 text-center">
+              <ProgressRing value={92} />
+              <span className="text-xs font-medium text-muted-foreground">
+                신원검증 승인율
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-2 text-center">
+              <ProgressRing value={78} color="var(--accent)" />
+              <span className="text-xs font-medium text-muted-foreground">
+                금일 매칭 달성률
+              </span>
+            </div>
+          </div>
+        </Card>
+      </div>
+
       {/* 월별 거래액 */}
       <Card>
         <CardTitle
@@ -365,21 +475,32 @@ function DashboardSection({ show }: { show: ToastFn }) {
             </Button>
           }
         />
-        <div className="-mx-6 overflow-x-auto">
+        <div className="-mx-6 max-h-[420px] overflow-auto">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
-              <tr className="border-y border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <th scope="col" className="px-6 py-3">환자</th>
+              <tr className="sticky top-0 z-10 border-y border-border bg-card text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <th scope="col" className="px-6 py-3">
+                  <span className="inline-flex items-center gap-1">환자<Icon name="chevronDown" className="h-3 w-3 opacity-50" /></span>
+                </th>
                 <th scope="col" className="px-6 py-3">간병인</th>
                 <th scope="col" className="px-6 py-3">병원</th>
-                <th scope="col" className="px-6 py-3">기간</th>
+                <th scope="col" className="px-6 py-3">
+                  <span className="inline-flex items-center gap-1">기간<Icon name="chevronDown" className="h-3 w-3 opacity-50" /></span>
+                </th>
                 <th scope="col" className="px-6 py-3">상태</th>
-                <th scope="col" className="px-6 py-3 text-right">간병비</th>
+                <th scope="col" className="px-6 py-3 text-right">
+                  <span className="inline-flex items-center gap-1">간병비<Icon name="chevronDown" className="h-3 w-3 opacity-50" /></span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {LIVE_ROWS.map((r, i) => (
-                <tr key={i} className="transition-colors hover:bg-muted/60">
+                <tr
+                  key={i}
+                  className={`transition-colors hover:bg-muted/60 ${
+                    i % 2 === 1 ? "bg-muted/40" : ""
+                  }`}
+                >
                   <td className="px-6 py-3.5 font-medium text-foreground tnum">
                     {r.patient}
                   </td>
@@ -837,15 +958,19 @@ function CoinsSection({ show }: { show: ToastFn }) {
           </span>
         </div>
 
-        <div className="-mx-6 overflow-x-auto">
+        <div className="-mx-6 max-h-[440px] overflow-auto">
           <table className="w-full min-w-[820px] text-sm">
             <thead>
-              <tr className="border-y border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <th scope="col" className="px-6 py-3">일자</th>
+              <tr className="sticky top-0 z-10 border-y border-border bg-card text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <th scope="col" className="px-6 py-3">
+                  <span className="inline-flex items-center gap-1">일자<Icon name="chevronDown" className="h-3 w-3 opacity-50" /></span>
+                </th>
                 <th scope="col" className="px-6 py-3">환자</th>
                 <th scope="col" className="px-6 py-3">간병인</th>
                 <th scope="col" className="px-6 py-3">결제수단</th>
-                <th scope="col" className="px-6 py-3 text-right">결제금액</th>
+                <th scope="col" className="px-6 py-3 text-right">
+                  <span className="inline-flex items-center gap-1">결제금액<Icon name="chevronDown" className="h-3 w-3 opacity-50" /></span>
+                </th>
                 <th scope="col" className="px-6 py-3 text-right">수수료</th>
                 <th scope="col" className="px-6 py-3">상태</th>
               </tr>
@@ -862,7 +987,12 @@ function CoinsSection({ show }: { show: ToastFn }) {
                 </tr>
               )}
               {filtered.map((r, i) => (
-                <tr key={i} className="transition-colors hover:bg-muted/60">
+                <tr
+                  key={i}
+                  className={`transition-colors hover:bg-muted/60 ${
+                    i % 2 === 1 ? "bg-muted/40" : ""
+                  }`}
+                >
                   <td className="px-6 py-3.5 text-muted-foreground tnum">
                     {r.date}
                   </td>
@@ -1233,8 +1363,9 @@ export default function AdminPage() {
 
         <div className="p-5 lg:p-8">
           {/* 상단 바 */}
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <h1 className="text-xl font-bold text-foreground sm:text-2xl">
+          <div className="relative mb-6 flex flex-wrap items-center justify-between gap-4">
+            <HeartPulseMotif className="pointer-events-none absolute -top-3 left-28 hidden h-16 w-auto text-primary/[0.05] lg:block" />
+            <h1 className="relative text-xl font-bold text-foreground sm:text-2xl">
               {SECTION_TITLE[active]}
             </h1>
             <div className="flex items-center gap-2 sm:gap-3">

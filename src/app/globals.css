@@ -18,6 +18,8 @@
   --color-ring: var(--ring);
   --color-kakao: var(--kakao);
   --color-kakao-foreground: var(--kakao-foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
@@ -44,9 +46,13 @@
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.1), 0 4px 8px -2px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 6px 16px -4px rgba(15, 23, 42, 0.1), 0 2px 6px -2px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 18px 40px -8px rgba(15, 23, 42, 0.14), 0 6px 14px -4px rgba(15, 23, 42, 0.08);
+  --shadow-primary: 0 14px 30px -8px rgba(14, 158, 110, 0.28), 0 4px 10px -4px rgba(14, 158, 110, 0.18);
+  --shadow-accent: 0 14px 30px -8px rgba(242, 120, 75, 0.26), 0 4px 10px -4px rgba(242, 120, 75, 0.16);
+  --surface: #fbfcfd;
+  --surface-2: #f1f5f8;
   --transition-fast: 150ms cubic-bezier(0.2, 0, 0, 1);
   --transition-base: 250ms cubic-bezier(0.2, 0, 0, 1);
   --transition-slow: 350ms cubic-bezier(0.05, 0.7, 0.1, 1);
@@ -269,5 +275,126 @@ html.large-text {
 /* 고령자 큰글씨 모드 — 폰 화면 콘텐츠 영역에 적용 (zoom 비례 확대) */
 .app-zoomed {
   zoom: 1.14;
+}
+
+/* ===== Phase 4: 시각·경험 craft ===== */
+
+/* 디스플레이 타이포 (헤드라인 강조) */
+.font-display {
+  font-weight: 800;
+  letter-spacing: -0.022em;
+}
+
+/* 그라데이션 텍스트 (그린→코랄). .shimmer 추가 시 은은한 흐름 */
+.text-gradient {
+  background-image: linear-gradient(100deg, var(--primary), #16b886 42%, var(--accent));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@keyframes textShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .text-gradient.shimmer { animation: textShimmer 6s ease-in-out infinite; }
+}
+
+/* 옅은 그레인 텍스처 오버레이 (부모 position:relative 필요) */
+.bg-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* 라우트 전환 (View Transitions API) */
+@keyframes vtFadeIn { from { opacity: 0; transform: translateY(10px); } }
+@keyframes vtFadeOut { to { opacity: 0; transform: translateY(-6px); } }
+::view-transition-new(root) {
+  animation: vtFadeIn 320ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+::view-transition-old(root) {
+  animation: vtFadeOut 200ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
+}
+
+/* 성공 체크마크 draw */
+@keyframes checkDraw { to { stroke-dashoffset: 0; } }
+.animate-check-draw {
+  stroke-dasharray: var(--len, 64);
+  stroke-dashoffset: var(--len, 64);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .animate-check-draw {
+    animation: checkDraw 0.6s cubic-bezier(0.65, 0, 0.35, 1) 0.15s forwards;
+  }
+}
+
+/* 성공 글로우 링 */
+@keyframes glowRing {
+  0% { box-shadow: 0 0 0 0 rgba(14, 158, 110, 0.45); }
+  70% { box-shadow: 0 0 0 16px rgba(14, 158, 110, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(14, 158, 110, 0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .animate-glow-ring { animation: glowRing 1.6s ease-out 0.2s 2; }
+}
+
+/* 부유 모션 (디바이스/카드) */
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .animate-float { animation: floatY 7s ease-in-out infinite; }
+}
+
+/* 가로 그리기 (플로우 커넥터) */
+@keyframes growX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.animate-grow-x { transform-origin: left center; }
+@media (prefers-reduced-motion: no-preference) {
+  .animate-grow-x { animation: growX 0.8s cubic-bezier(0.2, 0, 0, 1) both; }
+}
+
+/* 활동 피드 신규 항목 플래시 */
+@keyframes flashBg {
+  0% { background-color: rgba(14, 158, 110, 0.14); }
+  100% { background-color: transparent; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .animate-flash { animation: flashBg 1.5s ease-out both; }
+}
+
+/* 도넛 센터 마운트 */
+@keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: no-preference) {
+  .animate-pop-in { animation: popIn 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) 0.3s both; }
+}
+
+/* 스포트라이트 호버 (커서 추적 그라데이션) — 부모 group 필요 */
+.spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  background: radial-gradient(
+    220px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(14, 158, 110, 0.1),
+    transparent 60%
+  );
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .spotlight:hover::after { opacity: 1; }
 }
 

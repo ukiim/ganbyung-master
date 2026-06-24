@@ -11,7 +11,8 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { useToast } from "@/components/Toast";
 import { Avatar } from "@/components/Avatar";
 import { SkeletonList, Skeleton } from "@/components/Skeleton";
-import { EmptyState } from "@/components/EmptyState";
+import { EmptySearchArt } from "@/components/illustrations";
+import { SuccessCheck } from "@/components/SuccessCheck";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useA11y } from "@/hooks/useA11y";
 import { CAREGIVERS, HOSPITALS, won, type Caregiver } from "@/lib/data";
@@ -381,11 +382,15 @@ export default function PatientAppPage() {
                       <ul className="mt-2 space-y-1.5">
                         {filteredHospitals.length === 0 ? (
                           <li>
-                            <EmptyState
-                              icon="search"
-                              title="검색 결과가 없어요"
-                              desc="병원명·진료과를 다시 확인해 주세요"
-                            />
+                            <div className="rounded-[var(--radius-lg)] border border-dashed border-border bg-muted/40 px-6 py-8 text-center">
+                              <EmptySearchArt className="mx-auto h-24 w-24" />
+                              <p className="mt-2 text-sm font-semibold text-foreground">
+                                검색 결과가 없어요
+                              </p>
+                              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                                병원명·진료과를 다시 확인해 주세요
+                              </p>
+                            </div>
                           </li>
                         ) : (
                           filteredHospitals.map((h) => (
@@ -501,7 +506,7 @@ export default function PatientAppPage() {
             <ul className="space-y-3 px-4 pb-6 pt-3">
               {matchingList.map((cg) => (
                 <li key={cg.id}>
-                  <div className="rounded-[var(--radius-lg)] border border-border bg-card p-3.5">
+                  <div className="rounded-[var(--radius-lg)] border border-border bg-card p-3.5 shadow-[var(--shadow-md)] transition-shadow hover:shadow-[var(--shadow-lg)]">
                     <div className="flex items-start gap-3">
                       <Avatar name={cg.name} color={cg.color} size={48} />
                       <div className="min-w-0 flex-1">
@@ -1072,12 +1077,8 @@ export default function PatientAppPage() {
           <div className="flex min-h-full flex-col">
             <AppBar title="결제 완료" />
             <div className="flex flex-1 flex-col items-center justify-center px-6 pb-10 text-center">
-              <div className="animate-fade-up flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-                <Icon
-                  name="checkCircle"
-                  className="h-12 w-12 text-primary"
-                  filled
-                />
+              <div className="animate-fade-up">
+                <SuccessCheck size={84} />
               </div>
               <h3 className="animate-fade-up mt-5 text-xl font-bold text-foreground">
                 결제가 완료되었습니다

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
+import { ScrollProgress } from "@/components/ScrollProgress";
 
 const notoSansKR = Noto_Sans_KR({
   subsets: ["latin"],
@@ -86,6 +87,7 @@ export default function RootLayout({
         >
           본문으로 건너뛰기
         </a>
+        <ScrollProgress />
         <SiteHeader />
         <main id="main" className="flex-1">
           {children}

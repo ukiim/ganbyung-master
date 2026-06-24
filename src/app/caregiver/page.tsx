@@ -11,7 +11,8 @@ import { useToast } from "@/components/Toast";
 import { CountUp } from "@/components/CountUp";
 import { Avatar } from "@/components/Avatar";
 import { SkeletonList } from "@/components/Skeleton";
-import { EmptyState } from "@/components/EmptyState";
+import { SuccessCheck } from "@/components/SuccessCheck";
+import { EmptySearchArt } from "@/components/illustrations";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { CAREGIVERS, JOBS, won, type Job } from "@/lib/data";
 
@@ -553,7 +554,11 @@ export default function CaregiverAppPage() {
               </div>
               <div className="flex flex-col gap-2.5">
                 {JOBS.slice(0, 2).map((job) => (
-                  <Card key={job.id} className="p-3.5">
+                  <Card
+                    key={job.id}
+                    hover
+                    className="p-3.5 hover:shadow-[var(--shadow-lg)]"
+                  >
                     <JobTypeBadge type={job.type} urgent={job.urgent} />
                     <p className="mt-2 text-sm font-bold text-foreground">
                       {job.condition}
@@ -675,11 +680,15 @@ export default function CaregiverAppPage() {
             {jobsLoading ? (
               <SkeletonList count={3} />
             ) : filteredJobs.length === 0 ? (
-              <EmptyState
-                icon="search"
-                title="조건에 맞는 일자리가 없어요"
-                desc="필터를 조정해 보세요"
-                action={
+              <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-border bg-muted/40 px-6 py-10 text-center">
+                <EmptySearchArt className="animate-float h-24 w-24" />
+                <p className="mt-3 text-sm font-semibold text-foreground">
+                  조건에 맞는 일자리가 없어요
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  필터를 조정해 보세요
+                </p>
+                <div className="mt-4">
                   <Button
                     variant="outlined"
                     size="md"
@@ -691,12 +700,16 @@ export default function CaregiverAppPage() {
                     <Icon name="refresh" className="h-4 w-4" />
                     필터 초기화
                   </Button>
-                }
-              />
+                </div>
+              </div>
             ) : (
               <div className="flex flex-col gap-3">
                 {filteredJobs.map((job) => (
-                  <Card key={job.id} hover className="p-4">
+                  <Card
+                    key={job.id}
+                    hover
+                    className="p-4 hover:shadow-[var(--shadow-lg)]"
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <JobTypeBadge type={job.type} urgent={job.urgent} />
                       <span className="shrink-0 text-xs text-muted-foreground">
@@ -984,9 +997,7 @@ export default function CaregiverAppPage() {
         return (
           <ScreenWrap>
             <div className="flex flex-col items-center pt-6 text-center">
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Icon name="checkCircle" className="h-9 w-9" />
-              </span>
+              <SuccessCheck size={80} />
               <h2 className="mt-4 text-xl font-bold text-foreground">
                 매칭이 완료되었어요!
               </h2>

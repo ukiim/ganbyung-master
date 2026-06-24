@@ -13,6 +13,13 @@ import { Avatar } from "@/components/Avatar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Reveal } from "@/components/Reveal";
 import { CountUp } from "@/components/CountUp";
+import { GradientText } from "@/components/GradientText";
+import { IconChip } from "@/components/IconChip";
+import { WaveDivider } from "@/components/WaveDivider";
+import { HeartPulseMotif } from "@/components/illustrations";
+import { TiltCard } from "@/components/TiltCard";
+import { Magnetic } from "@/components/Magnetic";
+import { TransitionLink } from "@/components/TransitionLink";
 import {
   won,
   CAREGIVERS,
@@ -76,7 +83,7 @@ export default function Home() {
   return (
     <>
       {/* 1) HERO */}
-      <div className="relative overflow-hidden bg-background">
+      <div className="bg-grain relative overflow-hidden bg-background">
         <div
           aria-hidden="true"
           className="animate-hero-shift pointer-events-none absolute inset-0"
@@ -85,6 +92,7 @@ export default function Home() {
               "radial-gradient(60% 55% at 78% 18%, rgba(14,158,110,0.14), transparent 70%), radial-gradient(45% 45% at 12% 90%, rgba(242,120,75,0.08), transparent 70%)",
           }}
         />
+        <HeartPulseMotif className="animate-float pointer-events-none absolute -right-8 top-10 hidden w-[320px] text-primary/5 lg:block" />
         <Container className="relative">
           <div className="grid items-center gap-12 py-16 lg:grid-cols-2 lg:py-24">
             {/* 좌 */}
@@ -93,10 +101,10 @@ export default function Home() {
                 <Icon name="sparkles" className="animate-pulse-soft h-4 w-4" />
                 제니엘메디컬 간병인 중개 플랫폼
               </Eyebrow>
-              <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+              <h1 className="font-display mt-5 text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
                 간병의 모든 순간을
                 <br />
-                <span className="text-primary">신뢰</span>로 연결합니다
+                <GradientText shimmer>신뢰</GradientText>로 연결합니다
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
                 보호자와 검증된 간병인을 스마트하게 매칭하고, 카카오 알림톡으로
@@ -104,13 +112,23 @@ export default function Home() {
                 간병의 처음부터 끝까지 간병마스터가 함께합니다.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button href="/patient" variant="filled" size="lg">
-                  환자·보호자 앱 체험
-                  <Icon name="arrowRight" className="h-5 w-5" />
-                </Button>
-                <Button href="/admin" variant="outlined" size="lg">
-                  관리자 콘솔 보기
-                </Button>
+                <Magnetic>
+                  <TransitionLink
+                    href="/patient"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary px-7 py-3 text-base font-semibold text-primary-foreground shadow-sm transition-all hover:shadow-[var(--shadow-primary)] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98]"
+                  >
+                    환자·보호자 앱 체험
+                    <Icon name="arrowRight" className="h-5 w-5" />
+                  </TransitionLink>
+                </Magnetic>
+                <Magnetic>
+                  <TransitionLink
+                    href="/admin"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-border px-7 py-3 text-base font-semibold text-foreground transition-all hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98]"
+                  >
+                    관리자 콘솔 보기
+                  </TransitionLink>
+                </Magnetic>
               </div>
               <ul className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-medium text-muted-foreground">
                 <li className="inline-flex items-center gap-2">
@@ -206,20 +224,24 @@ export default function Home() {
 
                 {/* ③ 통계 칩 */}
                 <div
-                  className="animate-fade-up absolute bottom-6 left-5 inline-flex items-center gap-2 rounded-full bg-card px-3.5 py-2 shadow-lg"
+                  className="animate-fade-up absolute bottom-6 left-5"
                   style={{ animationDelay: "600ms" }}
                 >
-                  <Icon name="clock" className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">
-                    평균 매칭{" "}
-                    <CountUp value="12분" className="text-primary" />
-                  </span>
+                  <div className="animate-float inline-flex items-center gap-2 rounded-full bg-card px-3.5 py-2 shadow-[var(--shadow-lg)]">
+                    <Icon name="clock" className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">
+                      평균 매칭{" "}
+                      <CountUp value="12분" className="text-primary" />
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </Container>
       </div>
+
+      <WaveDivider fill="var(--muted)" />
 
       {/* 2) STATS */}
       <Section muted>
@@ -243,7 +265,7 @@ export default function Home() {
         <Reveal>
           <SectionHeading
             eyebrow="왜 간병마스터인가"
-            title="간병, 이렇게 불편했습니다"
+            title={<span className="font-display">간병, 이렇게 불편했습니다</span>}
             description="급할 때 일일이 전화하고, 누가 오는지도 모른 채 흥정하던 간병. 보호자도 간병인도 불안했습니다."
           />
         </Reveal>
@@ -264,12 +286,14 @@ export default function Home() {
         </div>
       </Section>
 
+      <WaveDivider fill="var(--muted)" />
+
       {/* 4) SOLUTION */}
       <Section muted id="about">
         <Reveal>
           <SectionHeading
             eyebrow="간병마스터의 해법"
-            title="하나의 플랫폼, 세 개의 연결"
+            title={<span className="font-display">하나의 플랫폼, 세 개의 연결</span>}
             description="환자·보호자, 간병인, 운영자를 한 흐름으로 잇습니다. 모든 연결의 중심에 간병마스터가 있습니다."
           />
         </Reveal>
@@ -292,23 +316,29 @@ export default function Home() {
           <div className="grid gap-6 md:grid-cols-3">
             {SURFACES.map((s, i) => (
               <Reveal key={s.title} delay={i * 70} className="h-full">
-                <Card hover className="flex h-full flex-col text-center">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
-                    <Icon name={s.icon} className="h-7 w-7 text-primary" />
-                  </div>
-                  <h3 className="mt-4 text-lg font-bold text-foreground">
-                    {s.title}
-                  </h3>
-                  <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-                    {s.desc}
-                  </p>
-                  <div className="mt-4">
-                    <Button href={s.href} variant="ghost">
-                      체험하기
-                      <Icon name="arrowRight" className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </Card>
+                <TiltCard className="h-full">
+                  <Card
+                    hover
+                    className="flex h-full flex-col text-center hover:shadow-[var(--shadow-lg)]"
+                  >
+                    <IconChip name={s.icon} tone="primary" size="lg" className="mx-auto" />
+                    <h3 className="mt-4 text-lg font-bold text-foreground">
+                      {s.title}
+                    </h3>
+                    <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                      {s.desc}
+                    </p>
+                    <div className="mt-4">
+                      <TransitionLink
+                        href={s.href}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-md)] px-5 py-2.5 text-sm font-semibold text-primary transition-all hover:bg-primary/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98]"
+                      >
+                        체험하기
+                        <Icon name="arrowRight" className="h-4 w-4" />
+                      </TransitionLink>
+                    </div>
+                  </Card>
+                </TiltCard>
               </Reveal>
             ))}
           </div>
@@ -320,28 +350,30 @@ export default function Home() {
         <Reveal>
           <SectionHeading
             eyebrow="핵심 기능"
-            title="신뢰를 만드는 핵심 기능"
+            title={<span className="font-display">신뢰를 만드는 핵심 기능</span>}
             description="검증된 매칭부터 투명한 협의, 전자계약, 안전결제까지 — 간병의 모든 단계를 책임집니다."
           />
         </Reveal>
         <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f, i) => (
             <Reveal key={f.title} delay={i * 70} className="h-full">
-              <Card hover className="h-full">
-                <div className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
-                  <Icon name={f.icon} className="h-6 w-6 text-primary" filled={f.icon === "kakao"} />
-                </div>
-                <h3 className="mt-4 text-lg font-bold text-foreground">
-                  {f.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {f.desc}
-                </p>
-              </Card>
+              <TiltCard className="h-full">
+                <Card hover className="h-full hover:shadow-[var(--shadow-lg)]">
+                  <IconChip name={f.icon} tone={i % 3 === 1 ? "accent" : "primary"} />
+                  <h3 className="mt-4 text-lg font-bold text-foreground">
+                    {f.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {f.desc}
+                  </p>
+                </Card>
+              </TiltCard>
             </Reveal>
           ))}
         </div>
       </Section>
+
+      <WaveDivider fill="var(--muted)" />
 
       {/* 6) FLOW */}
       <Section muted id="flow">
@@ -396,13 +428,7 @@ export default function Home() {
           {INTERFACES.map((it, i) => (
             <Reveal key={it.title} delay={i * 70} className="h-full">
               <Card hover className="flex h-full items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
-                  <Icon
-                    name={it.icon}
-                    className="h-6 w-6 text-primary"
-                    filled={it.icon === "kakao"}
-                  />
-                </div>
+                <IconChip name={it.icon} tone="primary" size="sm" className="shrink-0" />
                 <div className="min-w-0">
                   <h3 className="font-bold text-foreground">{it.title}</h3>
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
@@ -480,9 +506,11 @@ export default function Home() {
       {/* 9) CTA 밴드 */}
       <section
         id="contact"
-        className="scroll-mt-20 bg-primary py-20 text-primary-foreground"
+        className="relative scroll-mt-20 overflow-hidden bg-primary py-20 text-primary-foreground"
       >
-        <Container>
+        <HeartPulseMotif className="pointer-events-none absolute -left-10 -top-6 w-[280px] text-white/10" />
+        <HeartPulseMotif className="pointer-events-none absolute -bottom-8 right-0 hidden w-[300px] text-white/10 sm:block" />
+        <Container className="relative">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               간병마스터로 시작하세요

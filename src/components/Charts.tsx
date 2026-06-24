@@ -19,6 +19,25 @@ function Tooltip({ tip }: { tip: Tip }) {
   );
 }
 
+// Catmull-Rom → cubic bezier (모든 데이터 포인트를 통과, 값 왜곡 없음)
+function smoothLine(pts: readonly (readonly [number, number])[]): string {
+  if (pts.length < 3)
+    return pts.map((p, i) => `${i ? "L" : "M"}${p[0]},${p[1]}`).join(" ");
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? p2;
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+
 export function LineChart({
   data,
   labels,
@@ -46,7 +65,7 @@ export function LineChart({
     const y = pad.t + innerH - ((v - min) / span) * innerH;
     return [x, y] as const;
   });
-  const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0]},${p[1]}`).join(" ");
+  const line = smoothLine(pts);
   const area = `${line} L${pts[pts.length - 1][0]},${pad.t + innerH} L${pts[0][0]},${pad.t + innerH} Z`;
 
   const lineRef = useRef<SVGPathElement>(null);
@@ -79,6 +98,15 @@ export function LineChart({
           />
         ))}
         <path d={area} fill="url(#line-fill)" />
+        {/* 소프트 글로우 */}
+        <path
+          d={line}
+          fill="none"
+          stroke="var(--primary)"
+          strokeWidth="5"
+          opacity="0.16"
+          style={{ filter: "blur(4px)" }}
+        />
         <path
           ref={lineRef}
           className="chart-line-draw"
@@ -98,6 +126,14 @@ export function LineChart({
           };
           return (
             <g key={i}>
+              <text
+                x={p[0]}
+                y={p[1] - 9}
+                textAnchor="middle"
+                className="fill-[var(--muted-foreground)] text-[9px] font-semibold"
+              >
+                {data[i].toLocaleString("ko-KR")}
+              </text>
               <circle cx={p[0]} cy={p[1]} r="3" fill="var(--background)" stroke="var(--primary)" strokeWidth="2" />
               <circle
                 cx={p[0]}
@@ -160,6 +196,12 @@ export function BarChart({
     <div className={`relative w-full ${className}`}>
       <Tooltip tip={tip} />
       <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="막대 차트">
+        <defs>
+          <linearGradient id="bar-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#16b886" />
+            <stop offset="1" stopColor="var(--primary)" />
+          </linearGradient>
+        </defs>
         {[0.5, 1].map((g) => (
           <line key={g} x1={pad.l} x2={w - pad.r} y1={pad.t + innerH * (1 - g)} y2={pad.t + innerH * (1 - g)} stroke="var(--border)" strokeWidth="1" />
         ))}
@@ -202,8 +244,8 @@ export function BarChart({
                 height={bh}
                 rx="5"
                 className="chart-bar-grow"
-                fill="var(--primary)"
-                opacity={active ? 1 : 0.55 + 0.45 * (d.value / max)}
+                fill="url(#bar-grad)"
+                opacity={active ? 1 : 0.62 + 0.38 * (d.value / max)}
                 style={{ animationDelay: `${i * 80}ms` }}
               />
               <text x={x + bw / 2} y={y - 5} textAnchor="middle" className="fill-[var(--foreground)] text-[11px] font-semibold">
@@ -271,16 +313,18 @@ export function DonutChart({
             return seg;
           })}
         </g>
-        {centerTop && (
-          <text x="70" y="66" textAnchor="middle" className="fill-[var(--foreground)] text-[20px] font-bold">
-            {centerTop}
-          </text>
-        )}
-        {centerBot && (
-          <text x="70" y="84" textAnchor="middle" className="fill-[var(--muted-foreground)] text-[11px]">
-            {centerBot}
-          </text>
-        )}
+        <g className="animate-pop-in" style={{ transformOrigin: "70px 70px" }}>
+          {centerTop && (
+            <text x="70" y="66" textAnchor="middle" className="fill-[var(--foreground)] text-[20px] font-bold">
+              {centerTop}
+            </text>
+          )}
+          {centerBot && (
+            <text x="70" y="84" textAnchor="middle" className="fill-[var(--muted-foreground)] text-[11px]">
+              {centerBot}
+            </text>
+          )}
+        </g>
       </svg>
       <ul className="space-y-2">
         {segments.map((s, i) => (
