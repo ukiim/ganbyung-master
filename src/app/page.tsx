@@ -43,12 +43,6 @@ const SURFACES = [
     desc: "회원·간병인 검증, 매칭 현황, 정산·분쟁 관리, 운영 지표를 한눈에 모니터링.",
     href: "/admin",
   },
-  {
-    icon: "building" as const,
-    title: "기술·사업수행",
-    desc: "시스템 아키텍처, 대외 연계, 데이터·보안 설계와 사업수행 체계를 한눈에 확인하세요.",
-    href: "/architecture",
-  },
 ];
 
 const TRUST_ITEMS = [
@@ -277,8 +271,8 @@ export default function Home() {
         <Reveal>
           <SectionHeading
             eyebrow="간병마스터의 해법"
-            title="하나의 플랫폼, 네 개의 연결"
-            description="환자·보호자, 간병인, 운영자를 한 흐름으로 잇고, 기술·사업수행까지 한 화면에서 확인합니다. 모든 연결의 중심에 간병마스터가 있습니다."
+            title="하나의 플랫폼, 세 개의 연결"
+            description="환자·보호자, 간병인, 운영자를 한 흐름으로 잇습니다. 모든 연결의 중심에 간병마스터가 있습니다."
           />
         </Reveal>
 
@@ -297,10 +291,8 @@ export default function Home() {
             <div className="h-8 w-px bg-border" aria-hidden="true" />
           </Reveal>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {SURFACES.map((s, i) => {
-              const isArch = s.href === "/architecture";
-              return (
+          <div className="grid gap-6 md:grid-cols-3">
+            {SURFACES.map((s, i) => (
               <Reveal key={s.title} delay={i * 70} className="h-full">
                 <Card hover className="flex h-full flex-col text-center">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
@@ -314,14 +306,13 @@ export default function Home() {
                   </p>
                   <div className="mt-4">
                     <Button href={s.href} variant="ghost">
-                      {isArch ? "기술·사업수행 보기" : "체험하기"}
+                      체험하기
                       <Icon name="arrowRight" className="h-4 w-4" />
                     </Button>
                   </div>
                 </Card>
               </Reveal>
-              );
-            })}
+            ))}
           </div>
         </div>
       </Section>
@@ -506,13 +497,6 @@ export default function Home() {
                 데모 둘러보기
                 <Icon name="arrowRight" className="h-5 w-5" />
               </Button>
-              <Link
-                href="/architecture"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-primary-foreground/40 px-7 py-3 text-base font-semibold text-primary-foreground transition-all hover:bg-primary-foreground/10 active:scale-[0.98]"
-              >
-                기술·사업수행 보기
-                <Icon name="arrowUpRight" className="h-5 w-5" />
-              </Link>
               <Link
                 href="/admin"
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-primary-foreground/40 px-7 py-3 text-base font-semibold text-primary-foreground transition-all hover:bg-primary-foreground/10 active:scale-[0.98]"
