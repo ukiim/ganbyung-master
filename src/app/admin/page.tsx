@@ -6,6 +6,8 @@ import { Card, Badge, Button } from "@/components/ui";
 import { Icon, type IconName } from "@/components/Icon";
 import { LineChart, BarChart, DonutChart } from "@/components/Charts";
 import { CountUp } from "@/components/CountUp";
+import { Avatar as IllustAvatar } from "@/components/Avatar";
+import { EmptyState } from "@/components/EmptyState";
 import { won } from "@/lib/data";
 
 // ── 데스크탑용 로컬 토스트 (우하단 고정) ──────────────────────────
@@ -367,12 +369,12 @@ function DashboardSection({ show }: { show: ToastFn }) {
           <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-y border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <th className="px-6 py-3">환자</th>
-                <th className="px-6 py-3">간병인</th>
-                <th className="px-6 py-3">병원</th>
-                <th className="px-6 py-3">기간</th>
-                <th className="px-6 py-3">상태</th>
-                <th className="px-6 py-3 text-right">간병비</th>
+                <th scope="col" className="px-6 py-3">환자</th>
+                <th scope="col" className="px-6 py-3">간병인</th>
+                <th scope="col" className="px-6 py-3">병원</th>
+                <th scope="col" className="px-6 py-3">기간</th>
+                <th scope="col" className="px-6 py-3">상태</th>
+                <th scope="col" className="px-6 py-3 text-right">간병비</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -383,7 +385,7 @@ function DashboardSection({ show }: { show: ToastFn }) {
                   </td>
                   <td className="px-6 py-3.5">
                     <span className="inline-flex items-center gap-2">
-                      <Avatar name={r.caregiver} color={r.color} size="sm" />
+                      <IllustAvatar name={r.caregiver} color={r.color} size={32} />
                       <span className="font-medium text-foreground">
                         {r.caregiver}
                       </span>
@@ -407,6 +409,19 @@ function DashboardSection({ show }: { show: ToastFn }) {
               ))}
             </tbody>
           </table>
+        </div>
+        {/* 페이지네이션 어포던스 (시각용) */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <span className="text-xs text-muted-foreground tnum">
+            1-{LIVE_ROWS.length} / 총 1,284건
+          </span>
+          <Button
+            variant="outlined"
+            size="md"
+            onClick={() => show("다음 간병 현황을 불러왔습니다", "refresh")}
+          >
+            더보기
+          </Button>
         </div>
       </Card>
     </div>
@@ -559,6 +574,14 @@ function UserCheckSection({ show }: { show: ToastFn }) {
           title="신원검증 대기열"
           sub="자격·경력·서류·배상책임보험 가입 여부를 확인한 뒤 승인하세요"
         />
+        {pendingCount === 0 && (
+          <EmptyState
+            icon="checkCircle"
+            title="승인 대기 중인 간병인이 없어요"
+            desc="새로운 신원검증 신청이 접수되면 이곳에 표시됩니다."
+            className="mb-4"
+          />
+        )}
         <ul className="space-y-3">
           {APPLICANTS.map((a) => {
             const complete = DOC_KEYS.every((k) => a.docs[k]);
@@ -575,7 +598,7 @@ function UserCheckSection({ show }: { show: ToastFn }) {
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex items-start gap-3">
-                    <Avatar name={a.name} color={a.color} />
+                    <IllustAvatar name={a.name} color={a.color} size={32} />
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-bold text-foreground">
@@ -818,13 +841,13 @@ function CoinsSection({ show }: { show: ToastFn }) {
           <table className="w-full min-w-[820px] text-sm">
             <thead>
               <tr className="border-y border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <th className="px-6 py-3">일자</th>
-                <th className="px-6 py-3">환자</th>
-                <th className="px-6 py-3">간병인</th>
-                <th className="px-6 py-3">결제수단</th>
-                <th className="px-6 py-3 text-right">결제금액</th>
-                <th className="px-6 py-3 text-right">수수료</th>
-                <th className="px-6 py-3">상태</th>
+                <th scope="col" className="px-6 py-3">일자</th>
+                <th scope="col" className="px-6 py-3">환자</th>
+                <th scope="col" className="px-6 py-3">간병인</th>
+                <th scope="col" className="px-6 py-3">결제수단</th>
+                <th scope="col" className="px-6 py-3 text-right">결제금액</th>
+                <th scope="col" className="px-6 py-3 text-right">수수료</th>
+                <th scope="col" className="px-6 py-3">상태</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -878,6 +901,21 @@ function CoinsSection({ show }: { show: ToastFn }) {
             </tbody>
           </table>
         </div>
+        {/* 페이지네이션 어포던스 (시각용) */}
+        {filtered.length > 0 && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <span className="text-xs text-muted-foreground tnum">
+              1-{filtered.length} / 총 {(done + pending + 313).toLocaleString("ko-KR")}건
+            </span>
+            <Button
+              variant="outlined"
+              size="md"
+              onClick={() => show("다음 정산 내역을 불러왔습니다", "refresh")}
+            >
+              더보기
+            </Button>
+          </div>
+        )}
       </Card>
     </div>
   );

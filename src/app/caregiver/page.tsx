@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Card, Container, Eyebrow } from "@/components/ui";
 import { Icon, type IconName } from "@/components/Icon";
 import { PhoneFrame } from "@/components/PhoneFrame";
@@ -9,6 +9,10 @@ import { KakaoChat, type ChatMessage } from "@/components/KakaoChat";
 import { SiteFooter } from "@/components/SiteFooter";
 import { useToast } from "@/components/Toast";
 import { CountUp } from "@/components/CountUp";
+import { Avatar } from "@/components/Avatar";
+import { SkeletonList } from "@/components/Skeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { CAREGIVERS, JOBS, won, type Job } from "@/lib/data";
 
 const ME = CAREGIVERS[0]; // 김미숙
@@ -26,10 +30,14 @@ type Screen =
 
 type TabKey = "home" | "jobs" | "log" | "settle" | "my";
 
+// 신규 지명 제안 존재 여부 → 일자리 탭 배지.
+const HAS_NEW_NOMINATION = JOBS.some((j) => j.type === "지명");
+
 const TABS: AppTab[] = [
   { key: "home", label: "홈", icon: "home" },
-  { key: "jobs", label: "일자리", icon: "search" },
-  { key: "log", label: "간병일지", icon: "clipboard" },
+  { key: "jobs", label: "일자리", icon: "search", badge: HAS_NEW_NOMINATION },
+  // 진행중 간병(ACTIVE_CARE) → 간병일지 탭 배지.
+  { key: "log", label: "간병일지", icon: "clipboard", badge: true },
   { key: "settle", label: "정산", icon: "coins" },
   { key: "my", label: "마이", icon: "user" },
 ];
@@ -116,27 +124,8 @@ function JobTypeBadge({ type, urgent }: { type: Job["type"]; urgent?: boolean })
   );
 }
 
-function PatientAvatar({
-  color,
-  label,
-  className = "h-10 w-10",
-}: {
-  color: string;
-  label: string;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`flex shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${className}`}
-      style={{ backgroundColor: color }}
-      aria-hidden="true"
-    >
-      {label}
-    </div>
-  );
-}
-
 // 폰 프레임 내부 바텀시트. 오버레이 탭/닫기 버튼으로 닫는다.
+// 접근성: useFocusTrap(ESC·포커스 트랩·복귀) + role="dialog" aria-modal aria-labelledby.
 function BottomSheet({
   open,
   title,
@@ -148,6 +137,8 @@ function BottomSheet({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const sheetRef = useFocusTrap<HTMLDivElement>(open, onClose);
+  const titleId = "caregiver-sheet-title";
   if (!open) return null;
   return (
     <div className="absolute inset-0 z-30 flex flex-col justify-end">
@@ -157,10 +148,18 @@ function BottomSheet({
         onClick={onClose}
         className="absolute inset-0 bg-foreground/40"
       />
-      <div className="animate-toast-in relative max-h-[80%] overflow-y-auto rounded-t-[var(--radius-lg)] bg-card px-4 pb-6 pt-3 shadow-lg no-scrollbar">
+      <div
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="animate-toast-in relative max-h-[80%] overflow-y-auto rounded-t-[var(--radius-lg)] bg-card px-4 pb-6 pt-3 shadow-lg no-scrollbar"
+      >
         <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-border" />
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-foreground">{title}</h3>
+          <h3 id={titleId} className="text-base font-bold text-foreground">
+            {title}
+          </h3>
           <button
             type="button"
             onClick={onClose}
@@ -284,8 +283,16 @@ export default function CaregiverAppPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("전체");
   const [regionFilter, setRegionFilter] = useState<RegionFilter>("전 지역");
 
+  // 일자리 목록 로딩(진입·필터 변경 시 ~500ms 스켈레톤).
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const jobsLoadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // 정산 화면 바텀시트(증명서 발급).
   const [certSheetOpen, setCertSheetOpen] = useState(false);
+
+  // 정산·일지 history 더보기 어포던스(길면 접어서 표시).
+  const [showAllSettlements, setShowAllSettlements] = useState(false);
+  const [showAllLogs, setShowAllLogs] = useState(false);
 
   const selectedJob = useMemo(
     () => JOBS.find((j) => j.id === selectedJobId) ?? JOBS[0],
@@ -303,6 +310,17 @@ export default function CaregiverAppPage() {
       }),
     [typeFilter, regionFilter],
   );
+
+  // 일자리 화면 진입 또는 필터 변경 시 ~500ms 스켈레톤 후 결과 노출.
+  useEffect(() => {
+    if (screen !== "jobs") return;
+    setJobsLoading(true);
+    if (jobsLoadTimer.current) clearTimeout(jobsLoadTimer.current);
+    jobsLoadTimer.current = setTimeout(() => setJobsLoading(false), 500);
+    return () => {
+      if (jobsLoadTimer.current) clearTimeout(jobsLoadTimer.current);
+    };
+  }, [screen, typeFilter, regionFilter]);
 
   // 핵심 액션: 짧은 로딩 후 다음 화면 이동 + 토스트.
   const runAction = (
@@ -473,7 +491,7 @@ export default function CaregiverAppPage() {
                 <Badge tone="success">진행중 · {ACTIVE_CARE.dayProgress}</Badge>
               </div>
               <div className="mt-3 flex items-center gap-3">
-                <PatientAvatar color={ME.color} label="환" />
+                <Avatar name="환자" size={40} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-foreground">
                     {ACTIVE_CARE.patient} · {ACTIVE_CARE.condition}
@@ -627,11 +645,17 @@ export default function CaregiverAppPage() {
             {/* 결과 요약 + 초기화 */}
             <div className="-mt-1 flex items-center justify-between text-xs">
               <span className="text-muted-foreground">
-                총{" "}
-                <span className="tnum font-semibold text-foreground">
-                  {filteredJobs.length}건
-                </span>{" "}
-                의 일자리
+                {jobsLoading ? (
+                  "일자리를 불러오는 중…"
+                ) : (
+                  <>
+                    총{" "}
+                    <span className="tnum font-semibold text-foreground">
+                      {filteredJobs.length}건
+                    </span>{" "}
+                    의 일자리
+                  </>
+                )}
               </span>
               {(typeFilter !== "전체" || regionFilter !== "전 지역") && (
                 <button
@@ -648,78 +672,75 @@ export default function CaregiverAppPage() {
               )}
             </div>
 
-            {filteredJobs.length === 0 && (
-              <Card className="flex flex-col items-center gap-2 py-10 text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                  <Icon name="search" className="h-6 w-6" />
-                </span>
-                <p className="text-sm font-semibold text-foreground">
-                  조건에 맞는 일자리가 없어요
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  필터를 변경하거나 초기화해 보세요
-                </p>
-                <Button
-                  variant="outlined"
-                  size="md"
-                  className="mt-1"
-                  onClick={() => {
-                    setTypeFilter("전체");
-                    setRegionFilter("전 지역");
-                  }}
-                >
-                  <Icon name="refresh" className="h-4 w-4" />
-                  필터 초기화
-                </Button>
-              </Card>
-            )}
-
-            <div className="flex flex-col gap-3">
-              {filteredJobs.map((job) => (
-                <Card key={job.id} hover className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <JobTypeBadge type={job.type} urgent={job.urgent} />
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {job.patient}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm font-bold leading-snug text-foreground">
-                    {job.condition}
-                  </p>
-                  <dl className="mt-2.5 space-y-1.5 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <Icon name="hospital" className="h-3.5 w-3.5 shrink-0" />
-                      <dd>{job.hospital}</dd>
-                      <Badge tone="muted" className="ml-auto">
-                        심평원 검증
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Icon name="mapPin" className="h-3.5 w-3.5 shrink-0" />
-                      <dd>{job.region}</dd>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Icon name="calendar" className="h-3.5 w-3.5 shrink-0" />
-                      <dd>
-                        {job.period} ({job.days}일)
-                      </dd>
-                    </div>
-                  </dl>
-                  <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-                    <span className="tnum text-base font-bold text-primary">
-                      {won(job.dailyRate)}
-                      <span className="text-xs font-normal text-muted-foreground">
-                        /일
+            {jobsLoading ? (
+              <SkeletonList count={3} />
+            ) : filteredJobs.length === 0 ? (
+              <EmptyState
+                icon="search"
+                title="조건에 맞는 일자리가 없어요"
+                desc="필터를 조정해 보세요"
+                action={
+                  <Button
+                    variant="outlined"
+                    size="md"
+                    onClick={() => {
+                      setTypeFilter("전체");
+                      setRegionFilter("전 지역");
+                    }}
+                  >
+                    <Icon name="refresh" className="h-4 w-4" />
+                    필터 초기화
+                  </Button>
+                }
+              />
+            ) : (
+              <div className="flex flex-col gap-3">
+                {filteredJobs.map((job) => (
+                  <Card key={job.id} hover className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <JobTypeBadge type={job.type} urgent={job.urgent} />
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {job.patient}
                       </span>
-                    </span>
-                    <Button size="md" variant="outlined" onClick={() => openJob(job.id)}>
-                      상세보기
-                      <Icon name="chevronRight" className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                    </div>
+                    <p className="mt-2 text-sm font-bold leading-snug text-foreground">
+                      {job.condition}
+                    </p>
+                    <dl className="mt-2.5 space-y-1.5 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <Icon name="hospital" className="h-3.5 w-3.5 shrink-0" />
+                        <dd>{job.hospital}</dd>
+                        <Badge tone="muted" className="ml-auto">
+                          심평원 검증
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Icon name="mapPin" className="h-3.5 w-3.5 shrink-0" />
+                        <dd>{job.region}</dd>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Icon name="calendar" className="h-3.5 w-3.5 shrink-0" />
+                        <dd>
+                          {job.period} ({job.days}일)
+                        </dd>
+                      </div>
+                    </dl>
+                    <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                      <span className="tnum text-base font-bold text-primary">
+                        {won(job.dailyRate)}
+                        <span className="text-xs font-normal text-muted-foreground">
+                          /일
+                        </span>
+                      </span>
+                      <Button size="md" variant="outlined" onClick={() => openJob(job.id)}>
+                        상세보기
+                        <Icon name="chevronRight" className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </ScreenWrap>
         );
 
@@ -1149,26 +1170,42 @@ export default function CaregiverAppPage() {
                 작성한 간병일지
               </h3>
               <div className="flex flex-col gap-2.5">
-                {LOG_HISTORY.map((log) => (
-                  <Card key={log.date} className="p-3.5">
-                    <div className="flex items-center justify-between">
-                      <span className="tnum text-sm font-bold text-foreground">
-                        {log.date}
-                      </span>
-                      <Badge tone={log.status === "주의" ? "warning" : "success"}>
-                        {log.status}
-                      </Badge>
-                    </div>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                      <span className="font-semibold text-foreground">식사 </span>
-                      {log.meal}
-                    </p>
-                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                      {log.note}
-                    </p>
-                  </Card>
-                ))}
+                {(showAllLogs ? LOG_HISTORY : LOG_HISTORY.slice(0, 2)).map(
+                  (log) => (
+                    <Card key={log.date} className="p-3.5">
+                      <div className="flex items-center justify-between">
+                        <span className="tnum text-sm font-bold text-foreground">
+                          {log.date}
+                        </span>
+                        <Badge
+                          tone={log.status === "주의" ? "warning" : "success"}
+                        >
+                          {log.status}
+                        </Badge>
+                      </div>
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        <span className="font-semibold text-foreground">
+                          식사{" "}
+                        </span>
+                        {log.meal}
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {log.note}
+                      </p>
+                    </Card>
+                  ),
+                )}
               </div>
+              {!showAllLogs && LOG_HISTORY.length > 2 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllLogs(true)}
+                  className="mt-2.5 flex min-h-11 w-full items-center justify-center gap-1 rounded-[var(--radius-md)] border border-border bg-card text-xs font-semibold text-primary hover:bg-muted"
+                >
+                  간병일지 더보기 ({LOG_HISTORY.length - 2})
+                  <Icon name="chevronDown" className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </ScreenWrap>
         );
@@ -1191,7 +1228,10 @@ export default function CaregiverAppPage() {
             </Card>
 
             <div className="flex flex-col gap-2.5">
-              {SETTLEMENTS.map((s) => {
+              {(showAllSettlements
+                ? SETTLEMENTS
+                : SETTLEMENTS.slice(0, 2)
+              ).map((s) => {
                 const gross = s.dailyRate * s.days;
                 const fee = Math.round(gross * FEE_RATE);
                 const net = gross - fee;
@@ -1238,6 +1278,16 @@ export default function CaregiverAppPage() {
                 );
               })}
             </div>
+            {!showAllSettlements && SETTLEMENTS.length > 2 && (
+              <button
+                type="button"
+                onClick={() => setShowAllSettlements(true)}
+                className="-mt-0.5 flex min-h-11 w-full items-center justify-center gap-1 rounded-[var(--radius-md)] border border-border bg-card text-xs font-semibold text-primary hover:bg-muted"
+              >
+                정산 내역 더보기 ({SETTLEMENTS.length - 2})
+                <Icon name="chevronDown" className="h-4 w-4" />
+              </button>
+            )}
 
             <button
               type="button"
@@ -1284,11 +1334,7 @@ export default function CaregiverAppPage() {
             {/* 프로필 */}
             <Card className="p-4">
               <div className="flex items-center gap-3">
-                <PatientAvatar
-                  color={ME.color}
-                  label={ME.name.slice(0, 1)}
-                  className="h-14 w-14 text-lg"
-                />
+                <Avatar name={ME.name} color={ME.color} size={56} />
                 <div className="flex-1">
                   <p className="text-base font-bold text-foreground">
                     {ME.name}

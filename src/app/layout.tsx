@@ -48,6 +48,26 @@ export const metadata: Metadata = {
       "환자·보호자와 검증된 간병인을 투명하게 연결하는 간병 중개 플랫폼.",
     images: ["og.png"],
   },
+  alternates: { canonical: "/" },
+  appleWebApp: { capable: true, title: "간병마스터", statusBarStyle: "default" },
+};
+
+const ORG_JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "제니엘메디컬",
+  alternateName: "간병마스터",
+  url: "https://ukiim.github.io/ganbyung-master/",
+  logo: "https://ukiim.github.io/ganbyung-master/icon.svg",
+  description:
+    "환자·보호자와 검증된 간병인을 투명하게 연결하는 간병 중개 플랫폼 간병마스터.",
+  contactPoint: {
+    "@type": "ContactPoint",
+    telephone: "+82-1588-7240",
+    contactType: "customer service",
+    areaServed: "KR",
+    availableLanguage: "Korean",
+  },
 };
 
 export default function RootLayout({
@@ -56,6 +76,10 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${notoSansKR.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased bg-background text-foreground">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_JSONLD) }}
+        />
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"

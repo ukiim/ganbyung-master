@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/Brand";
 import { Icon } from "@/components/Icon";
+import { A11yControl } from "@/components/A11yControl";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 const NAV = [
   { href: "/", label: "홈" },
@@ -16,6 +18,7 @@ const NAV = [
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const menuRef = useFocusTrap<HTMLDivElement>(open, () => setOpen(false));
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -42,29 +45,36 @@ export function SiteHeader() {
           ))}
         </div>
 
-        <div className="hidden md:block">
+        <div className="flex items-center gap-1">
+          <A11yControl />
           <Link
             href="/patient"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-[0.98]"
+            className="hidden min-h-11 items-center gap-1.5 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-[0.98] md:inline-flex"
           >
             데모 둘러보기
             <Icon name="arrowRight" className="h-4 w-4" />
           </Link>
-        </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] text-foreground hover:bg-muted md:hidden"
-          aria-label={open ? "메뉴 닫기" : "메뉴 열기"}
-          aria-expanded={open}
-        >
-          <Icon name={open ? "x" : "menu"} className="h-6 w-6" />
-        </button>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] text-foreground hover:bg-muted md:hidden"
+            aria-label={open ? "메뉴 닫기" : "메뉴 열기"}
+            aria-expanded={open}
+          >
+            <Icon name={open ? "x" : "menu"} className="h-6 w-6" />
+          </button>
+        </div>
       </nav>
 
       {open && (
-        <div className="border-t border-border bg-background md:hidden">
+        <div
+          ref={menuRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="메뉴"
+          className="border-t border-border bg-background md:hidden"
+        >
           <div className="space-y-1 px-4 py-3">
             {NAV.map((item) => (
               <Link

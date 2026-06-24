@@ -20,7 +20,12 @@ export function useToast() {
   );
 
   const node = state ? (
-    <div className="pointer-events-none absolute inset-x-0 bottom-24 z-40 flex justify-center px-6">
+    <div
+      className="pointer-events-none absolute inset-x-0 bottom-24 z-40 flex justify-center px-6"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
       <div
         key={state.message}
         className="animate-toast-in flex items-center gap-2 rounded-full bg-foreground/92 px-4 py-2.5 text-sm font-medium text-background shadow-lg backdrop-blur"

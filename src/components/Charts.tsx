@@ -89,27 +89,34 @@ export function LineChart({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {pts.map((p, i) => (
-          <g key={i}>
-            <circle cx={p[0]} cy={p[1]} r="3" fill="var(--background)" stroke="var(--primary)" strokeWidth="2" />
-            <circle
-              cx={p[0]}
-              cy={p[1]}
-              r="14"
-              fill="transparent"
-              className="cursor-pointer"
-              onMouseEnter={() =>
-                setTip({
-                  xPct: (p[0] / w) * 100,
-                  yPct: (p[1] / h) * 100,
-                  label: labels?.[i] ?? `${i + 1}`,
-                  value: `${data[i].toLocaleString("ko-KR")}${unit}`,
-                })
-              }
-              onMouseLeave={() => setTip(null)}
-            />
-          </g>
-        ))}
+        {pts.map((p, i) => {
+          const t = {
+            xPct: (p[0] / w) * 100,
+            yPct: (p[1] / h) * 100,
+            label: labels?.[i] ?? `${i + 1}`,
+            value: `${data[i].toLocaleString("ko-KR")}${unit}`,
+          };
+          return (
+            <g key={i}>
+              <circle cx={p[0]} cy={p[1]} r="3" fill="var(--background)" stroke="var(--primary)" strokeWidth="2" />
+              <circle
+                cx={p[0]}
+                cy={p[1]}
+                r="14"
+                fill="transparent"
+                className="cursor-pointer"
+                tabIndex={0}
+                role="img"
+                aria-label={`${t.label}: ${t.value}`}
+                onMouseEnter={() => setTip(t)}
+                onMouseLeave={() => setTip(null)}
+                onClick={() => setTip(t)}
+                onFocus={() => setTip(t)}
+                onBlur={() => setTip(null)}
+              />
+            </g>
+          );
+        })}
         {labels &&
           labels.map((l, i) => (
             <text
@@ -161,23 +168,32 @@ export function BarChart({
           const x = pad.l + slot * i + (slot - bw) / 2;
           const y = pad.t + innerH - bh;
           const active = hover === i;
+          const t = {
+            xPct: ((x + bw / 2) / w) * 100,
+            yPct: (y / h) * 100,
+            label: d.label,
+            value: `${d.value.toLocaleString("ko-KR")}${unit}`,
+          };
+          const enter = () => {
+            setHover(i);
+            setTip(t);
+          };
+          const leave = () => {
+            setHover(null);
+            setTip(null);
+          };
           return (
             <g
               key={d.label}
               className="cursor-pointer"
-              onMouseEnter={() => {
-                setHover(i);
-                setTip({
-                  xPct: ((x + bw / 2) / w) * 100,
-                  yPct: (y / h) * 100,
-                  label: d.label,
-                  value: `${d.value.toLocaleString("ko-KR")}${unit}`,
-                });
-              }}
-              onMouseLeave={() => {
-                setHover(null);
-                setTip(null);
-              }}
+              tabIndex={0}
+              role="img"
+              aria-label={`${t.label}: ${t.value}`}
+              onMouseEnter={enter}
+              onMouseLeave={leave}
+              onClick={enter}
+              onFocus={enter}
+              onBlur={leave}
             >
               <rect
                 x={x}
@@ -270,9 +286,15 @@ export function DonutChart({
         {segments.map((s, i) => (
           <li
             key={s.label}
-            className="flex cursor-pointer items-center gap-2 text-sm"
+            className="flex cursor-pointer items-center gap-2 rounded text-sm"
+            tabIndex={0}
+            role="img"
+            aria-label={`${s.label}: ${Math.round((s.value / total) * 100)}%`}
             onMouseEnter={() => setHover(i)}
             onMouseLeave={() => setHover(null)}
+            onFocus={() => setHover(i)}
+            onBlur={() => setHover(null)}
+            onClick={() => setHover(i)}
           >
             <span className="h-3 w-3 rounded-sm" style={{ background: s.color, outline: hover === i ? `2px solid ${s.color}40` : "none" }} />
             <span className={hover === i ? "font-semibold text-foreground" : "text-muted-foreground"}>{s.label}</span>

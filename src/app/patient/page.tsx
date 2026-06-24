@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Container, Badge, Button } from "@/components/ui";
 import { Icon, type IconName } from "@/components/Icon";
@@ -9,6 +9,11 @@ import { AppTabBar, type AppTab } from "@/components/AppTabBar";
 import { KakaoChat, type ChatMessage } from "@/components/KakaoChat";
 import { SiteFooter } from "@/components/SiteFooter";
 import { useToast } from "@/components/Toast";
+import { Avatar } from "@/components/Avatar";
+import { SkeletonList, Skeleton } from "@/components/Skeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useA11y } from "@/hooks/useA11y";
 import { CAREGIVERS, HOSPITALS, won, type Caregiver } from "@/lib/data";
 
 // 마이 메뉴 바텀시트 키
@@ -97,23 +102,6 @@ function AppBar({
   );
 }
 
-function Avatar({ cg, size = 44 }: { cg: Caregiver; size?: number }) {
-  return (
-    <div
-      className="flex shrink-0 items-center justify-center rounded-full font-bold text-white"
-      style={{
-        background: cg.color,
-        width: size,
-        height: size,
-        fontSize: size * 0.4,
-      }}
-      aria-hidden="true"
-    >
-      {cg.name.slice(0, 1)}
-    </div>
-  );
-}
-
 function Stars({ rating }: { rating: number }) {
   return (
     <span className="inline-flex items-center gap-0.5 text-amber-500">
@@ -146,14 +134,43 @@ export default function PatientAppPage() {
   const [sheet, setSheet] = useState<SheetKey>(null);
   const [openTerms, setOpenTerms] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [zoomed, setZoomed] = useState(false);
+  const [matchLoading, setMatchLoading] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const { largeText, toggleLargeText } = useA11y();
   const { show, node } = useToast();
+
+  // 매칭/상세 진입 시 짧은 스켈레톤 (실제 로딩 연출)
+  useEffect(() => {
+    if (screen === "matching") {
+      setMatchLoading(true);
+      const t = setTimeout(() => setMatchLoading(false), 600);
+      return () => clearTimeout(t);
+    }
+    if (screen === "detail") {
+      setDetailLoading(true);
+      setShowAllReviews(false);
+      const t = setTimeout(() => setDetailLoading(false), 400);
+      return () => clearTimeout(t);
+    }
+  }, [screen, selectedId]);
 
   const selected =
     CAREGIVERS.find((c) => c.id === selectedId) ?? CAREGIVERS[0];
 
   const total = selected.dailyRate * CARE_DAYS;
   const fee = Math.round(total * 0.1);
+
+  // 진행중 간병 존재 + 미확인 알림 여부 → 탭 배지
+  const hasActiveCare = true; // 데모: 김미숙 간병인 D+3 진행중
+  const hasUnreadAlert = true; // 데모: 새 간병일지·알림톡 미확인
+  const tabs: AppTab[] = TABS.map((t) =>
+    t.key === "progress"
+      ? { ...t, badge: hasActiveCare }
+      : t.key === "my"
+        ? { ...t, badge: hasUnreadAlert }
+        : t,
+  );
 
   const activeTab: TabKey =
     screen === "home"
@@ -211,7 +228,7 @@ export default function PatientAppPage() {
               title="간병마스터"
               right={
                 <div className="flex items-center gap-1">
-                  <ZoomToggle zoomed={zoomed} onToggle={() => setZoomed((v) => !v)} />
+                  <ZoomToggle zoomed={largeText} onToggle={toggleLargeText} />
                   <button
                     type="button"
                     aria-label="알림"
@@ -363,8 +380,12 @@ export default function PatientAppPage() {
                     {hospitalOpen && (
                       <ul className="mt-2 space-y-1.5">
                         {filteredHospitals.length === 0 ? (
-                          <li className="rounded-[var(--radius-md)] border border-dashed border-border bg-muted/50 p-4 text-center text-sm text-muted-foreground">
-                            검색 결과가 없습니다. 병원명·진료과를 확인해 주세요.
+                          <li>
+                            <EmptyState
+                              icon="search"
+                              title="검색 결과가 없어요"
+                              desc="병원명·진료과를 다시 확인해 주세요"
+                            />
                           </li>
                         ) : (
                           filteredHospitals.map((h) => (
@@ -472,12 +493,17 @@ export default function PatientAppPage() {
               ))}
             </div>
 
+            {matchLoading ? (
+              <div className="px-4 pb-6 pt-3">
+                <SkeletonList count={5} />
+              </div>
+            ) : (
             <ul className="space-y-3 px-4 pb-6 pt-3">
               {matchingList.map((cg) => (
                 <li key={cg.id}>
                   <div className="rounded-[var(--radius-lg)] border border-border bg-card p-3.5">
                     <div className="flex items-start gap-3">
-                      <Avatar cg={cg} size={48} />
+                      <Avatar name={cg.name} color={cg.color} size={48} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <span className="text-base font-bold text-foreground">
@@ -543,6 +569,7 @@ export default function PatientAppPage() {
                 </li>
               ))}
             </ul>
+            )}
           </div>
         );
 
@@ -551,10 +578,25 @@ export default function PatientAppPage() {
         return (
           <div>
             <AppBar title="간병인 프로필" onBack={() => go("matching")} />
+            {detailLoading ? (
+              <div className="space-y-4 px-4 pb-28 pt-3" role="status" aria-label="불러오는 중">
+                <div className="flex items-center gap-3.5">
+                  <Skeleton className="h-16 w-16 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-1/2" />
+                    <Skeleton className="h-3.5 w-2/3" />
+                  </div>
+                </div>
+                <Skeleton className="h-20 w-full rounded-[var(--radius-lg)]" />
+                <Skeleton className="h-24 w-full rounded-[var(--radius-md)]" />
+                <Skeleton className="h-32 w-full rounded-[var(--radius-md)]" />
+                <span className="sr-only">불러오는 중…</span>
+              </div>
+            ) : (
             <div className="px-4 pb-28 pt-3">
               {/* 헤더 */}
               <div className="flex items-center gap-3.5">
-                <Avatar cg={selected} size={64} />
+                <Avatar name={selected.name} color={selected.color} size={64} />
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <h3 className="text-xl font-bold text-foreground">
@@ -617,7 +659,7 @@ export default function PatientAppPage() {
               {/* 리뷰 */}
               <SubHead>보호자 리뷰</SubHead>
               <ul className="space-y-2.5">
-                {REVIEWS.map((r) => (
+                {(showAllReviews ? REVIEWS : REVIEWS.slice(0, 2)).map((r) => (
                   <li
                     key={r.author}
                     className="rounded-[var(--radius-md)] border border-border bg-card p-3.5"
@@ -634,7 +676,26 @@ export default function PatientAppPage() {
                   </li>
                 ))}
               </ul>
+              {REVIEWS.length > 2 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllReviews((v) => !v)}
+                  aria-expanded={showAllReviews}
+                  className="mt-2.5 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-border text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                  {showAllReviews
+                    ? "리뷰 접기"
+                    : `리뷰 더보기 (${REVIEWS.length - 2}개)`}
+                  <Icon
+                    name="chevronDown"
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${
+                      showAllReviews ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
             </div>
+            )}
 
             <BottomBar>
               <Button
@@ -1027,7 +1088,7 @@ export default function PatientAppPage() {
 
               <div className="animate-fade-up mt-6 w-full rounded-[var(--radius-lg)] border border-border bg-card p-4 text-left">
                 <div className="flex items-center gap-3">
-                  <Avatar cg={selected} size={44} />
+                  <Avatar name={selected.name} color={selected.color} size={44} />
                   <div>
                     <p className="text-sm font-bold text-foreground">
                       {selected.name} 간병인
@@ -1158,7 +1219,7 @@ export default function PatientAppPage() {
                 <div className="rounded-[var(--radius-lg)] border border-border bg-card p-4">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2 text-sm font-bold text-foreground">
-                      <Avatar cg={selected} size={28} />
+                      <Avatar name={selected.name} color={selected.color} size={28} />
                       {selected.name} 작성
                     </span>
                     <span className="tnum text-xs text-muted-foreground">
@@ -1251,8 +1312,8 @@ export default function PatientAppPage() {
               {/* 큰글씨 모드 토글 */}
               <button
                 type="button"
-                onClick={() => setZoomed((v) => !v)}
-                aria-pressed={zoomed}
+                onClick={toggleLargeText}
+                aria-pressed={largeText}
                 className="flex w-full items-center gap-3 rounded-[var(--radius-lg)] border border-border bg-card p-4 text-left"
               >
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -1268,13 +1329,13 @@ export default function PatientAppPage() {
                 </div>
                 <span
                   className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
-                    zoomed ? "bg-primary" : "bg-border"
+                    largeText ? "bg-primary" : "bg-border"
                   }`}
                   aria-hidden="true"
                 >
                   <span
                     className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-                      zoomed ? "translate-x-5" : "translate-x-0.5"
+                      largeText ? "translate-x-5" : "translate-x-0.5"
                     }`}
                   />
                 </span>
@@ -1404,16 +1465,14 @@ export default function PatientAppPage() {
               overlay={node}
               tabBar={
                 <AppTabBar<TabKey>
-                  tabs={TABS}
+                  tabs={tabs}
                   active={activeTab}
                   onChange={onTab}
                 />
               }
             >
-              <div className={zoomed ? "app-zoomed" : undefined}>
-                <div key={screen} className="animate-screen-in">
-                  {renderScreen()}
-                </div>
+              <div key={screen} className="animate-screen-in">
+                {renderScreen()}
               </div>
               {sheet && (
                 <BottomSheet
@@ -1517,6 +1576,8 @@ function BottomSheet({
     qna: "1:1 문의 (Q&A)",
     faq: "자주 묻는 질문",
   };
+  const trapRef = useFocusTrap<HTMLDivElement>(true, onClose);
+  const titleId = `sheet-title-${sheet}`;
 
   return (
     <div className="absolute inset-0 z-40 flex flex-col justify-end">
@@ -1528,9 +1589,15 @@ function BottomSheet({
         className="absolute inset-0 bg-foreground/40"
       />
       {/* 시트 */}
-      <div className="animate-fade-up relative max-h-[80%] overflow-y-auto rounded-t-[var(--radius-lg)] bg-background pb-4 shadow-2xl">
+      <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="animate-fade-up relative max-h-[80%] overflow-y-auto rounded-t-[var(--radius-lg)] bg-background pb-4 shadow-2xl"
+      >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
-          <h3 className="text-base font-bold text-foreground">
+          <h3 id={titleId} className="text-base font-bold text-foreground">
             {titles[sheet]}
           </h3>
           <button

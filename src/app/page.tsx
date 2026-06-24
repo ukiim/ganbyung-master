@@ -9,6 +9,7 @@ import {
   Badge,
 } from "@/components/ui";
 import { Icon } from "@/components/Icon";
+import { Avatar } from "@/components/Avatar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Reveal } from "@/components/Reveal";
 import { CountUp } from "@/components/CountUp";
@@ -145,12 +146,7 @@ export default function Home() {
                   style={{ animationDelay: "320ms" }}
                 >
                   <div className="flex items-center gap-3">
-                    <span
-                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-white"
-                      style={{ backgroundColor: HERO_CG.color }}
-                    >
-                      {HERO_CG.name.slice(0, 1)}
-                    </span>
+                    <Avatar name={HERO_CG.name} color={HERO_CG.color} size={48} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-foreground">

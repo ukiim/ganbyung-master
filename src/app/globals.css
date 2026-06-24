@@ -33,7 +33,7 @@
   --accent: #f2784b;             /* 따뜻한 코랄 = "따뜻한 돌봄" */
   --accent-foreground: #ffffff;
   --muted: #f8fafc;
-  --muted-foreground: #64748b;
+  --muted-foreground: #4d5a70;  /* 고령 사용자 가독성: 보조텍스트 대비 상향(약 7:1) */
   --card: #ffffff;
   --card-foreground: #1e293b;
   --border: #e2e8f0;
@@ -59,6 +59,25 @@ body {
   /* 고령 사용자 접근성: 넉넉한 본문 행간 */
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+}
+
+/* 큰글씨 모드 — root font-size 확대(rem 기반 전체 스케일). 영구화는 useA11y. */
+html.large-text {
+  font-size: 112.5%;
+}
+
+/* 고대비 모드 — 토큰 오버라이드로 대비 강화 */
+:root.high-contrast {
+  --foreground: #0b1220;
+  --card-foreground: #0b1220;
+  --muted-foreground: #2a3645;
+  --border: #8a97a8;
+  --input: #8a97a8;
+  --primary: #0a7f57;
+  --ring: #0a7f57;
+}
+:root.high-contrast :focus-visible {
+  outline-width: 3px;
 }
 
 /* 부드러운 스크롤 (reduced motion 존중) */
