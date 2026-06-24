@@ -1,0 +1,4 @@
+:HL["/ganbyung-master/_next/static/chunks/0yyi8vy_v33fv.css","style"]
+:HL["/ganbyung-master/_next/static/chunks/04f0zb6vnrk2a.css","style"]
+:HL["/ganbyung-master/_next/static/media/fca78c2ee6cec166-s.p.1sn26-iqxrgtp.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+0:{"tree":{"name":"","param":null,"prefetchHints":20,"slots":{"children":{"name":"caregiver","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}},"staleTime":300,"buildId":"T4gtt4hUyLMEk4E26uv1n"}
